@@ -179,23 +179,20 @@ int main(int argc, char **argv) {
 //
 //	vector<string> geometry_files;
 //	vector<string> featureFilesNames;
-	ofstream outputFile;
-
 //	FileUtils::readFolder(argv[2], &geometry_files);
+
+	ofstream outputFile;
 
 	vector<string> images;
 	FileUtils::readFolder(argv[1], images);
-	vector<string>::iterator imagee = std::find(images.begin(),images.end(),"magdalen_000985.jpg");
+//	vector<string>::iterator imagee = std::find(images.begin(),images.end(),"magdalen_000985.jpg");
 
-	//images.begin()
-	for (vector<string>::iterator image = imagee; image != images.end();
+	for (vector<string>::iterator image = images.begin(); image != images.end();
 			++image) {
 		if ((*image).find(".jpg") != string::npos) {
 			printf("%s\n", (*image).c_str());
 			Features features = detectAndDescribeFeatures(
 					argv[1] + string("/") + (*image));
-//		printf("Number of detected keypoints=[%d]\n", (int) features.keypoints.size());
-//		printf("Number of described keypoints=[%d]\n", features.descriptors.rows);
 
 			string descriptorFileName(argv[1]);
 			descriptorFileName += "/" + (*image).substr(0, (*image).size() - 4)
@@ -203,19 +200,13 @@ int main(int argc, char **argv) {
 			printf("Writing feature descriptors to [%s]\n",
 					descriptorFileName.c_str());
 			outputFile.open(descriptorFileName.c_str(), ios::out | ios::trunc);
-//		printf("%d 128\n", (int) features.keypoints.size());
 			outputFile << (int) features.keypoints.size() << " 128" << endl;
 			for (int i = 0; i < (int) features.keypoints.size(); ++i) {
-//			printf("%f %f %f %f\n ", features.keypoints[i].pt.x,
-//					features.keypoints[i].pt.y, features.keypoints[i].size,
-//					features.keypoints[i].angle);
 				outputFile << (float) features.keypoints[i].pt.x << " "
 						<< (float) features.keypoints[i].pt.y << " "
 						<< (float) features.keypoints[i].size << " "
 						<< (float) features.keypoints[i].angle << endl << " ";
 				for (int j = 0; j < features.descriptors.cols; ++j) {
-//				printf("%d ", (int) round(features.descriptors.at<float>(i, j)));
-//				printf((j + 1) % 20 == 0 ? "\n " : "");
 					outputFile
 							<< (int) round(features.descriptors.at<float>(i, j))
 							<< " ";
@@ -223,11 +214,9 @@ int main(int argc, char **argv) {
 						outputFile << endl << " ";
 					}
 				}
-//			printf("\n");
 				outputFile << endl;
 			}
 			outputFile.close();
-//		getchar();
 		}
 	}
 
