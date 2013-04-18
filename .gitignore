@@ -13,3 +13,5 @@
 *.a
 
 Debug/*
+.cproject
+.project

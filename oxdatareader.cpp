@@ -21,12 +21,19 @@
 #include "StringUtils.h"
 #include "FileUtils.h"
 
+#include <iostream>
+
 using std::endl;
 using std::string;
 using std::vector;
 using std::map;
 using std::ofstream;
 using std::ios;
+using std::find;
+
+using std::cout;
+
+using std::ostringstream;
 
 using namespace cv;
 
@@ -36,67 +43,101 @@ struct Features {
 };
 
 void createListDbTxt(const char* folderName,
-		vector<string>::const_iterator fileName, vector<string>* objects,
-		bool appendLandmarkId) {
-	if ((*fileName).find("1") != string::npos
-			&& (*fileName).find("query") == string::npos) {
+		const vector<string>& geometryFiles, string& keypointsFilename,
+		bool appendLandmarkId = false) {
 
-		string landmarkName;
-		if (appendLandmarkId == true) {
-			landmarkName = StringUtils::parseLandmarkName(fileName);
-		}
+	ofstream keypointsFile;
+	keypointsFile.open(keypointsFilename.c_str(), ios::out | ios::trunc);
 
-		std::ifstream infile((string(folderName) + "/" + *fileName).c_str());
+	vector<string> landmarks;
 
-		// Extract data from file
-		string line;
+	for (vector<string>::const_iterator fileName = geometryFiles.begin();
+			fileName != geometryFiles.end(); ++fileName) {
+		if ((*fileName).find("1") != string::npos
+				&& (*fileName).find("query") == string::npos) {
+			// Open file
+			fprintf(stdout, "Reading file [%s]\n", (*fileName).c_str());
 
-		while (std::getline(infile, line)) {
-			string imageName = "db/" + string(line.c_str())
-					+ string(KEYPOINT_FILE_EXTENSION);
-			if (appendLandmarkId == true) {
-				imageName += " " + string(landmarkName.c_str());
+			string landmarkName = StringUtils::parseLandmarkName(fileName);
+
+			if (std::find(landmarks.begin(), landmarks.end(), landmarkName)
+					== landmarks.end()) {
+				// If landmarkName wasn't found then add it
+				landmarks.push_back(landmarkName);
 			}
-			(*objects).push_back(imageName);
-		}
 
-		//Close file
-		infile.close();
+			std::ifstream infile(
+					(string(folderName) + "/" + *fileName).c_str());
+
+			// Extract data from file
+			string line;
+
+			while (std::getline(infile, line)) {
+				string imageName = "db/" + string(line.c_str())
+						+ string(KEYPOINT_FILE_EXTENSION);
+				if (appendLandmarkId == true) {
+					// Position of the landmarkName in the vector of landmarks
+					ostringstream temp;
+					temp << ((int) landmarks.size()) - 1;
+					imageName += " " + temp.str();
+				}
+
+				keypointsFile << imageName << endl;
+			}
+
+			//Close file
+			infile.close();
+		}
 	}
+
+	keypointsFile.close();
 }
 
 void createListQueriesTxt(const char* folderName,
-		vector<string>::const_iterator fileName, vector<string>* objects,
-		bool appendLandmarkId) {
+		const vector<string>& geometryFiles, string& keypointsFilename,
+		bool appendLandmarkId = false) {
 
-	if ((*fileName).find("query") != string::npos) {
-		// Open file
-		fprintf(stdout, "Reading file [%s]\n", (*fileName).c_str());
+	ofstream keypointsFile;
+	keypointsFile.open(keypointsFilename.c_str(), ios::out | ios::trunc);
 
-		string landmarkName;
-		if (appendLandmarkId == true) {
-			landmarkName = StringUtils::parseLandmarkName(fileName);
-		}
+	vector<string> landmarks;
+	for (vector<string>::const_iterator fileName = geometryFiles.begin();
+			fileName != geometryFiles.end(); ++fileName) {
+		if ((*fileName).find("query") != string::npos) {
+			// Open file
+			fprintf(stdout, "Reading file [%s]\n", (*fileName).c_str());
 
-		std::ifstream infile((string(folderName) + "/" + *fileName).c_str());
-
-		// Extract data from file
-		string line;
-
-		while (std::getline(infile, line)) {
-			vector<string> lineSplitted = StringUtils::split(line, ' ');
-			string qName = "queries/" + lineSplitted[0].substr(5)
-					+ string(KEYPOINT_FILE_EXTENSION);
-
-			if (appendLandmarkId == true) {
-				qName += " " + string(landmarkName.c_str());
+			string landmarkName = StringUtils::parseLandmarkName(fileName);
+			if (std::find(landmarks.begin(), landmarks.end(), landmarkName)
+					== landmarks.end()) {
+				// If landmarkName wasn't found then add it
+				landmarks.push_back(landmarkName);
 			}
 
-			(*objects).push_back(qName);
-		}
+			std::ifstream infile(
+					(string(folderName) + "/" + *fileName).c_str());
 
-		//Close file
-		infile.close();
+			// Extract data from file
+			string line;
+
+			while (std::getline(infile, line)) {
+				vector<string> lineSplitted = StringUtils::split(line, ' ');
+				string qName = "queries/" + lineSplitted[0].substr(5)
+						+ string(KEYPOINT_FILE_EXTENSION);
+
+				if (appendLandmarkId == true) {
+					// Position of the landmarkName in the vector of landmarks
+					ostringstream temp;
+					temp << ((int) landmarks.size()) - 1;
+					qName += " " + temp.str();
+				}
+
+				keypointsFile << qName << endl;
+			}
+
+			//Close file
+			infile.close();
+		}
 	}
 
 }
@@ -157,111 +198,91 @@ template<class K, class V> vector<K> getMapKeys(map<K, V>& images) {
 
 int main(int argc, char **argv) {
 
-//	vector<string> geom_files;
-//	FileUtils::readFolder(argv[1], geom_files);
-//	map<string, vector<KeyPoint> > images;
-//	FileUtils::readDescriptorFiles(argv[1], geom_files, images);
-//	vector<string> keys = getMapKeys<string, vector<KeyPoint> >(images);
-//	map<string, vector<KeyPoint> >::value_type imageV(keys[3].c_str(),
-//			images.at(keys[3]));
+	if (argc != 4) {
+		printf(
+				"Usage: %s {output specification} <path_to_geometry_files_folder>"
+						"\nOUTPUT:\n  -db: create list of SIFT feature files of database images.\n  -dbld: create list of SIFT feature files of database images and corresponding landmark ID.\n  -q: create list of SIFT feature files of query images.\n  -gt: create list of SIFT feature files of query images and corresponding landmark ID.\n  -cf: compute image features.\n",
+				argv[0]);
+		return EXIT_FAILURE;
+	}
 
-//	displayImage(
-//			("/home/andresf/Documents/POLIMI_maestria/Computer Vision/Project/oxbuild_images/"
-//					+ imageV.first + ".jpg").c_str(), features);
-
-//	if (argc != 3) {
-//		printf(
-//				"Usage: %s {output specification} <path_to_geometry_files>"
-//						"\nOUTPUT:\n  -db: create list of SIFT feature files of database images.\n  -dbld: create list of SIFT feature files of database images and corresponding landmark ID.\n  -q: create list of SIFT feature files of query images.\n  -qld: create list of SIFT feature files of query images and corresponding landmark ID.",
-//				argv[0]);
-//		return EXIT_FAILURE;
-//	}
-//
-//	vector<string> geometry_files;
-//	vector<string> featureFilesNames;
-//	FileUtils::readFolder(argv[2], &geometry_files);
+	vector<string> geometryFiles;
+	vector<string> featureFilesNames;
+	FileUtils::readFolder(argv[2], geometryFiles);
 
 	ofstream outputFile;
 
-	vector<string> images;
-	FileUtils::readFolder(argv[1], images);
-//	vector<string>::iterator imagee = std::find(images.begin(),images.end(),"magdalen_000985.jpg");
+	if (string(argv[1]).compare("-db") == 0) {
+		string keypointsFilename = string(argv[3]) + "/list_db.txt";
+		createListDbTxt(argv[2], geometryFiles, keypointsFilename);
+	} else if (string(argv[1]).compare("-dbld") == 0) {
+		string keypointsFilename = string(argv[3]) + "/list_db_ld.txt";
+		createListDbTxt(argv[2], geometryFiles, keypointsFilename, true);
+	} else if (string(argv[1]).compare("-q") == 0) {
+		string keypointsFilename = string(argv[3]) + "/list_queries.txt";
+		createListQueriesTxt(argv[2], geometryFiles, keypointsFilename);
+	} else if (string(argv[1]).compare("-gt") == 0) {
+		string keypointsFilename = string(argv[3]) + "/list_gt.txt";
+		createListQueriesTxt(argv[2], geometryFiles, keypointsFilename, true);
+	} else if (string(argv[1]).compare("-cf") == 0) {
+		vector<string> images;
+		FileUtils::readFolder(argv[2], images);
+		vector<string>::iterator start_image;
+		if (argc == 3) {
+			start_image = images.begin();
+		} else {
+			start_image = std::find(images.begin(), images.end(), argv[3]);
+		}
 
-	for (vector<string>::iterator image = images.begin(); image != images.end();
-			++image) {
-		if ((*image).find(".jpg") != string::npos) {
-			printf("%s\n", (*image).c_str());
-			Features features = detectAndDescribeFeatures(
-					argv[1] + string("/") + (*image));
+		for (vector<string>::iterator image = start_image;
+				image != images.end(); ++image) {
+			if ((*image).find(".jpg") != string::npos) {
+				printf("%s\n", (*image).c_str());
+				Features features = detectAndDescribeFeatures(
+						argv[2] + string("/") + (*image));
 
-			string descriptorFileName(argv[1]);
-			descriptorFileName += "/" + (*image).substr(0, (*image).size() - 4)
-					+ ".key";
-			printf("Writing feature descriptors to [%s]\n",
-					descriptorFileName.c_str());
-			outputFile.open(descriptorFileName.c_str(), ios::out | ios::trunc);
-			outputFile << (int) features.keypoints.size() << " 128" << endl;
-			for (int i = 0; i < (int) features.keypoints.size(); ++i) {
-				outputFile << (float) features.keypoints[i].pt.x << " "
-						<< (float) features.keypoints[i].pt.y << " "
-						<< (float) features.keypoints[i].size << " "
-						<< (float) features.keypoints[i].angle << endl << " ";
-				for (int j = 0; j < features.descriptors.cols; ++j) {
-					outputFile
-							<< (int) round(features.descriptors.at<float>(i, j))
-							<< " ";
-					if ((j + 1) % 20 == 0) {
-						outputFile << endl << " ";
-					}
-				}
-				outputFile << endl;
+				string descriptorFileName(argv[2]);
+				descriptorFileName += "/"
+						+ (*image).substr(0, (*image).size() - 4) + ".key";
+				printf("Writing feature descriptors to [%s]\n",
+						descriptorFileName.c_str());
+//				outputFile.open(descriptorFileName.c_str(),
+//						ios::out | ios::trunc);
+				cout << (int) features.keypoints.size() << " 128" << endl;
+//				for (int i = 0; i < (int) features.keypoints.size(); ++i) {
+//					outputFile << (float) features.keypoints[i].pt.x << " "
+//							<< (float) features.keypoints[i].pt.y << " "
+//							<< (float) features.keypoints[i].size << " "
+//							<< (float) features.keypoints[i].angle << endl
+//							<< " ";
+//					for (int j = 0; j < features.descriptors.cols; ++j) {
+//						outputFile
+//								<< (int) round(
+//										features.descriptors.at<float>(i, j))
+//								<< " ";
+//						if ((j + 1) % 20 == 0) {
+//							outputFile << endl << " ";
+//						}
+//					}
+//					outputFile << endl;
+//				}
+//				outputFile.close();
 			}
-			outputFile.close();
 		}
 	}
 
-//	if (string(argv[1]).compare("-db") == 0) {
-//		featureFilesNames.clear();
-//		FileUtils::readFiles(argv[2], &geometry_files, &featureFilesNames,
-//				&createListDbTxt);
-//		outputFile.open("./list_db.txt", ios::out | ios::trunc);
-//		for (vector<string>::iterator it = featureFilesNames.begin();
-//				it != featureFilesNames.end(); ++it) {
-//			outputFile << *it << endl;
-//		}
-//		outputFile.close();
-//	} else if (string(argv[1]).compare("-dbld") == 0) {
-//		featureFilesNames.clear();
-//		FileUtils::readFiles(argv[1], &geometry_files, &featureFilesNames,
-//				&createListDbTxt, true);
-//		outputFile.open("./list_db_ld.txt", ios::out | ios::trunc);
-//		for (vector<string>::iterator it = featureFilesNames.begin();
-//				it != featureFilesNames.end(); ++it) {
-//			outputFile << *it << endl;
-//		}
-//		outputFile.close();
-//	} else if (string(argv[1]).compare("-q") == 0) {
-//		featureFilesNames.clear();
-//		FileUtils::readFiles(argv[1], &geometry_files, &featureFilesNames,
-//				&createListQueriesTxt);
-//		outputFile.open("./list_queries.txt", ios::out | ios::trunc);
-//		for (vector<string>::iterator it = featureFilesNames.begin();
-//				it != featureFilesNames.end(); ++it) {
-//			outputFile << *it << endl;
-//		}
-//		outputFile.close();
-//	} else if (string(argv[1]).compare("-qld") == 0) {
-//		featureFilesNames.clear();
-//		FileUtils::readFiles(argv[1], &geometry_files, &featureFilesNames,
-//				&createListQueriesTxt, true);
-//		outputFile.open("./list_gt.txt", ios::out | ios::trunc);
-//
-//		for (vector<string>::iterator it = featureFilesNames.begin();
-//				it != featureFilesNames.end(); ++it) {
-//			outputFile << *it << endl;
-//		}
-//		outputFile.close();
-//	}
+#if 0
+	vector<string> geom_files;
+	FileUtils::readFolder(argv[1], geom_files);
+	map<string, vector<KeyPoint> > images;
+	FileUtils::readDescriptorFiles(argv[1], geom_files, images);
+	vector<string> keys = getMapKeys<string, vector<KeyPoint> >(images);
+	map<string, vector<KeyPoint> >::value_type imageV(keys[3].c_str(),
+			images.at(keys[3]));
+	displayImage(
+			("/home/andresf/Documents/POLIMI_maestria/Computer Vision/Project/oxbuild_images/"
+					+ imageV.first + ".jpg").c_str(), features);
+#endif
 
 	return EXIT_SUCCESS;
 

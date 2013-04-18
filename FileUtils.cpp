@@ -27,7 +27,7 @@ int FileUtils::readFolder(const char* folderName, vector<string>& files) {
 	struct dirent *ent;
 	// Try opening folder
 	if ((dir = opendir(folderName)) != NULL) {
-		fprintf(stdout, "Start reading directory [%s]\n", folderName);
+		fprintf(stdout, "Opening directory [%s]\n", folderName);
 		// Save all true directory names into a vector of strings
 		while ((ent = readdir(dir)) != NULL) {
 			// Ignore . and .. as valid folder names
@@ -107,21 +107,18 @@ int FileUtils::readDescriptorFiles(const char* folderName,
 	return EXIT_SUCCESS;
 }
 
-int FileUtils::readFiles(const char* folderName, const vector<string>* files,
-		vector<string>* objects,
-		void (*fileParser)(const char*, vector<string>::const_iterator,
-				vector<string>*, bool appendLandmarkId),
-		bool appendLandmarkId) {
+vector<string> FileUtils::readFiles(const char* folderName,
+		const vector<string>& files) {
+
+	vector<string> objects;
 
 	// Loop over collection of files
-	for (vector<string>::const_iterator file = (*files).begin();
-			file != (*files).end(); ++file) {
-
-		fileParser(folderName, file, objects, appendLandmarkId);
-
+	for (vector<string>::const_iterator file = files.begin();
+			file != files.end(); ++file) {
+		objects.push_back((*file));
 	}
 
-	return EXIT_SUCCESS;
+	return objects;
 }
 
 int FileUtils::readDescriptors(char* fileName) {
