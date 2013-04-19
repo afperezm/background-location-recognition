@@ -229,8 +229,10 @@ int main(int argc, char **argv) {
 		FileUtils::readFolder(argv[2], images);
 		vector<string>::iterator start_image;
 		if (argc == 3) {
+			// Set first image as start point of the loop over the folder of images
 			start_image = images.begin();
 		} else {
+			// Set received argument as start point of the loop over the folder of images
 			start_image = std::find(images.begin(), images.end(), argv[3]);
 		}
 
@@ -246,27 +248,27 @@ int main(int argc, char **argv) {
 						+ (*image).substr(0, (*image).size() - 4) + ".key";
 				printf("Writing feature descriptors to [%s]\n",
 						descriptorFileName.c_str());
-//				outputFile.open(descriptorFileName.c_str(),
-//						ios::out | ios::trunc);
+				outputFile.open(descriptorFileName.c_str(),
+						ios::out | ios::trunc);
 				cout << (int) features.keypoints.size() << " 128" << endl;
-//				for (int i = 0; i < (int) features.keypoints.size(); ++i) {
-//					outputFile << (float) features.keypoints[i].pt.x << " "
-//							<< (float) features.keypoints[i].pt.y << " "
-//							<< (float) features.keypoints[i].size << " "
-//							<< (float) features.keypoints[i].angle << endl
-//							<< " ";
-//					for (int j = 0; j < features.descriptors.cols; ++j) {
-//						outputFile
-//								<< (int) round(
-//										features.descriptors.at<float>(i, j))
-//								<< " ";
-//						if ((j + 1) % 20 == 0) {
-//							outputFile << endl << " ";
-//						}
-//					}
-//					outputFile << endl;
-//				}
-//				outputFile.close();
+				for (int i = 0; i < (int) features.keypoints.size(); ++i) {
+					outputFile << (float) features.keypoints[i].pt.x << " "
+							<< (float) features.keypoints[i].pt.y << " "
+							<< (float) features.keypoints[i].size << " "
+							<< (float) features.keypoints[i].angle << endl
+							<< " ";
+					for (int j = 0; j < features.descriptors.cols; ++j) {
+						outputFile
+								<< (int) round(
+										features.descriptors.at<float>(i, j))
+								<< " ";
+						if ((j + 1) % 20 == 0) {
+							outputFile << endl << " ";
+						}
+					}
+					outputFile << endl;
+				}
+				outputFile.close();
 			}
 		}
 	}
