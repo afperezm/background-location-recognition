@@ -15,3 +15,5 @@
 Debug/*
 .cproject
 .project
+
+gmon.out
