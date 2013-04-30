@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <VocabLib/keys2.h>
 
 #define KEYPOINT_FILE_EXTENSION ".key"
 
@@ -20,14 +21,15 @@ public:
 	static int readDescriptorFiles(const char* folderName,
 			const vector<string>& files,
 			map<string, vector<KeyPoint> >& images);
-	static vector<string> readFiles(const char* folderName, const vector<string>& files);
+	static vector<string> readFiles(const char* folderName,
+			const vector<string>& files);
 //	static void createListDbTxt(const char* folderName,
 //			vector<string>::const_iterator fileName, vector<string>* objects,
 //			bool appendLandmarkId);
 //	static void createListQueriesTxt(const char* folderName,
 //			vector<string>::const_iterator fileName, vector<string>* objects,
 //			bool appendLandmarkId);
-	static int readDescriptors(char* fileName);
+	static int readOriginalDescriptors(char* fileName);
 private:
 };
 

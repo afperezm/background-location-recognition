@@ -10,6 +10,7 @@
 #include <map>
 #include <fstream>
 #include "StringUtils.h"
+#include <VocabLib/keys2.h>
 
 #include <stdlib.h>
 #include <utility>
@@ -121,7 +122,7 @@ vector<string> FileUtils::readFiles(const char* folderName,
 	return objects;
 }
 
-int FileUtils::readDescriptors(char* fileName) {
+int FileUtils::readOriginalDescriptors(char* fileName) {
 	int totalDescriptors = 5; // 16334970
 	int descriptorSize = 128;
 
