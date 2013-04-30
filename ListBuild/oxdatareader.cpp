@@ -306,14 +306,16 @@ int main(int argc, char **argv) {
 	} else if (string(argv[1]).compare("-gv") == 0) {
 
 		string keyfilesFolder(argv[2]);
-
 		string templateFileName(argv[3]);
+
 		Mat templateImg = imread(
 				(keyfilesFolder + "/" + string(argv[3])).c_str(),
 				CV_LOAD_IMAGE_GRAYSCALE);
 		templateFileName = keyfilesFolder + "/" + templateFileName;
 		templateFileName.resize(templateFileName.size() - 4);
 		templateFileName += KEYPOINT_FILE_EXTENSION;
+		vector<KeyPoint> templateKeypoints = readDescriptors(
+				templateFileName.c_str());
 
 		string sourceKeyFilename(argv[4]);
 		Mat sourceImg = imread((keyfilesFolder + "/" + string(argv[4])).c_str(),
@@ -321,10 +323,6 @@ int main(int argc, char **argv) {
 		sourceKeyFilename = keyfilesFolder + "/" + sourceKeyFilename;
 		sourceKeyFilename.resize(sourceKeyFilename.size() - 4);
 		sourceKeyFilename += KEYPOINT_FILE_EXTENSION;
-
-		vector<KeyPoint> templateKeypoints = readDescriptors(
-				templateFileName.c_str());
-
 		vector<KeyPoint> sourcesKeypoints = readDescriptors(
 				sourceKeyFilename.c_str());
 
@@ -337,8 +335,10 @@ int main(int argc, char **argv) {
 		Mat corrMat = Mat::zeros(templateKeypoints.size(),
 				sourcesKeypoints.size(), CV_32F);
 
+		// Loop over keypoints vector of template image
 		for (int i = 0; i < (int) templateKeypoints.size(); ++i) {
 			KeyPoint pA = templateKeypoints[i];
+			// Ignore features close to the border since they don't have enough support
 			if (pA.pt.x - windowHalfLength < 0 || pA.pt.y - windowHalfLength < 0
 					|| pA.pt.x + windowHalfLength > templateImg.cols
 					|| pA.pt.y + windowHalfLength > templateImg.rows) {
@@ -355,8 +355,10 @@ int main(int argc, char **argv) {
 			Scalar meanA, stdDevA;
 			meanStdDev(A, meanA, stdDevA);
 
+			// Loop over keypoints vector of source image
 			for (int j = 0; j < (int) sourcesKeypoints.size(); ++j) {
 				KeyPoint pB = sourcesKeypoints[j];
+				// Ignore features close to the border since they don't have enough support
 				if (pB.pt.x - windowHalfLength < 0
 						|| pB.pt.y - windowHalfLength < 0
 						|| pB.pt.x + windowHalfLength > sourceImg.cols
@@ -364,6 +366,7 @@ int main(int argc, char **argv) {
 					continue;
 				}
 
+				// Computing normalized cross correlation for the patches A and B
 				Mat B;
 				sourceImg(
 						Range(pB.pt.y - windowHalfLength,
@@ -381,6 +384,7 @@ int main(int argc, char **argv) {
 				divide(NCC, stdDevB, NCC);
 				double ncc = sum(NCC)[0] / std::pow((double) windowSize, 2);
 
+				// Applying threshold to the just computed normalized cross correlation
 				if (ncc >= thresholdNCC) {
 					corrMat.at<float>(i, j) = ncc;
 //					printf("NCC templateKeypoint=[%d] sourceKeypoint=[%d] [%f]\n", i, j, ncc);
@@ -388,10 +392,10 @@ int main(int argc, char **argv) {
 			}
 		}
 
+		// Looking for maximum by rows
 		printf("Looking for maximum by rows\n");
 
-		map<int, int> matchSourceForTemplate;
-		map<int, int> matchTemplateForSource;
+		map<int, int> sourceKeypointsMatches;
 
 		for (int i = 0; i < corrMat.rows; ++i) {
 			double minVal, maxVal;
@@ -399,9 +403,14 @@ int main(int argc, char **argv) {
 			minMaxLoc(corrMat(Range(i, i + 1), Range(0, corrMat.cols)), &minVal,
 					&maxVal, &minLoc, &maxLoc, Mat());
 //			printf("Max for row [%d] is col [%d]\n", i, maxLoc.x);
-			matchSourceForTemplate.insert(
+			sourceKeypointsMatches.insert(
 					map<int, int>::value_type(i, (int) maxLoc.x));
 		}
+
+		// Looking for maximum by rows
+		printf("Looking for maximum by rows\n");
+
+		map<int, int> templateKeypointsMatches;
 
 		for (int i = 0; i < corrMat.cols; ++i) {
 			double minVal, maxVal;
@@ -409,31 +418,25 @@ int main(int argc, char **argv) {
 			minMaxLoc(corrMat(Range(0, corrMat.rows), Range(i, i + 1)), &minVal,
 					&maxVal, &minLoc, &maxLoc, Mat());
 //			printf("Max for col [%d] is row [%d]\n", i, maxLoc.y);
-			matchTemplateForSource.insert(
+			templateKeypointsMatches.insert(
 					map<int, int>::value_type(i, maxLoc.y));
 		}
 
 		printf("Looking for maximum by columns\n");
 
-		vector<int> p1ind;
-		vector<int> p2ind;
 		vector<DMatch> good_matches;
 
 		printf("Looking for coincident matches\n");
 
 		for (int i = 0; i < corrMat.rows; ++i) {
-			if (matchSourceForTemplate.at(matchTemplateForSource.at(i)) == i) {
-				p1ind.push_back(i);
-				p2ind.push_back(matchTemplateForSource.at(i));
+			if (templateKeypointsMatches.at(sourceKeypointsMatches.at(i))
+					== i) {
 				good_matches.push_back(
-						DMatch(i, matchTemplateForSource.at(i), 1));
+						DMatch(i, sourceKeypointsMatches.at(i), 1));
 			}
 		}
 
-		printf("Matched points from source to template: [%d]\n",
-				(int) p1ind.size());
-
-		printf("Matched points from template to source: [%d]\n", (int) p1ind.size());
+		printf("Matched points: [%d]\n", (int) good_matches.size());
 
 		Mat img_matches;
 		drawMatches(templateImg, templateKeypoints, sourceImg, sourcesKeypoints,
