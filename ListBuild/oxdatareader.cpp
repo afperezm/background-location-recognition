@@ -223,6 +223,72 @@ template<class K, class V> vector<K> getMapKeys(map<K, V>& images) {
 	return keys;
 }
 
+Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
+		vector<KeyPoint>& templateKeypoints, vector<KeyPoint>& sourcesKeypoints,
+		int& windowHalfLength, int& windowSize, double& thresholdNCC) {
+
+	Mat corrMat = Mat::zeros(templateKeypoints.size(), sourcesKeypoints.size(),
+			CV_32F);
+
+	// Loop over keypoints vector of template image
+	for (int i = 0; i < (int) templateKeypoints.size(); ++i) {
+		KeyPoint pA = templateKeypoints[i];
+		// Ignore features close to the border since they don't have enough support
+		if (pA.pt.x - windowHalfLength < 0 || pA.pt.y - windowHalfLength < 0
+				|| pA.pt.x + windowHalfLength > templateImg.cols
+				|| pA.pt.y + windowHalfLength > templateImg.rows) {
+			continue;
+		}
+
+		Mat A;
+		templateImg(
+				Range(pA.pt.y - windowHalfLength,
+						pA.pt.y + windowHalfLength + 1),
+				Range(pA.pt.x - windowHalfLength,
+						pA.pt.x + windowHalfLength + 1)).clone().convertTo(A,
+				CV_32F);
+		Scalar meanA, stdDevA;
+		meanStdDev(A, meanA, stdDevA);
+
+		// Loop over keypoints vector of source image
+		for (int j = 0; j < (int) sourcesKeypoints.size(); ++j) {
+			KeyPoint pB = sourcesKeypoints[j];
+			// Ignore features close to the border since they don't have enough support
+			if (pB.pt.x - windowHalfLength < 0 || pB.pt.y - windowHalfLength < 0
+					|| pB.pt.x + windowHalfLength > sourceImg.cols
+					|| pB.pt.y + windowHalfLength > sourceImg.rows) {
+				continue;
+			}
+
+			// Computing normalized cross correlation for the patches A and B
+			Mat B;
+			sourceImg(
+					Range(pB.pt.y - windowHalfLength,
+							pB.pt.y + windowHalfLength + 1),
+					Range(pB.pt.x - windowHalfLength,
+							pB.pt.x + windowHalfLength + 1)).convertTo(B,
+					CV_32F);
+
+			Scalar meanB, stdDevB;
+			meanStdDev(B, meanB, stdDevB);
+
+			Mat NCC;
+			multiply(A - meanA, B - meanB, NCC);
+			divide(NCC, stdDevA, NCC);
+			divide(NCC, stdDevB, NCC);
+			double ncc = sum(NCC)[0] / std::pow((double) windowSize, 2);
+
+			// Applying threshold to the just computed normalized cross correlation
+			if (ncc >= thresholdNCC) {
+				corrMat.at<float>(i, j) = ncc;
+//					printf("NCC templateKeypoint=[%d] sourceKeypoint=[%d] [%f]\n", i, j, ncc);
+			}
+		}
+	}
+
+	return corrMat;
+}
+
 int main(int argc, char **argv) {
 
 	Mat A = Mat::ones(3, 3, CV_32F);
@@ -332,65 +398,9 @@ int main(int argc, char **argv) {
 		int windowSize = 2 * windowHalfLength + 1;
 		double thresholdNCC = 0.8;
 
-		Mat corrMat = Mat::zeros(templateKeypoints.size(),
-				sourcesKeypoints.size(), CV_32F);
-
-		// Loop over keypoints vector of template image
-		for (int i = 0; i < (int) templateKeypoints.size(); ++i) {
-			KeyPoint pA = templateKeypoints[i];
-			// Ignore features close to the border since they don't have enough support
-			if (pA.pt.x - windowHalfLength < 0 || pA.pt.y - windowHalfLength < 0
-					|| pA.pt.x + windowHalfLength > templateImg.cols
-					|| pA.pt.y + windowHalfLength > templateImg.rows) {
-				continue;
-			}
-
-			Mat A;
-			templateImg(
-					Range(pA.pt.y - windowHalfLength,
-							pA.pt.y + windowHalfLength + 1),
-					Range(pA.pt.x - windowHalfLength,
-							pA.pt.x + windowHalfLength + 1)).clone().convertTo(
-					A, CV_32F);
-			Scalar meanA, stdDevA;
-			meanStdDev(A, meanA, stdDevA);
-
-			// Loop over keypoints vector of source image
-			for (int j = 0; j < (int) sourcesKeypoints.size(); ++j) {
-				KeyPoint pB = sourcesKeypoints[j];
-				// Ignore features close to the border since they don't have enough support
-				if (pB.pt.x - windowHalfLength < 0
-						|| pB.pt.y - windowHalfLength < 0
-						|| pB.pt.x + windowHalfLength > sourceImg.cols
-						|| pB.pt.y + windowHalfLength > sourceImg.rows) {
-					continue;
-				}
-
-				// Computing normalized cross correlation for the patches A and B
-				Mat B;
-				sourceImg(
-						Range(pB.pt.y - windowHalfLength,
-								pB.pt.y + windowHalfLength + 1),
-						Range(pB.pt.x - windowHalfLength,
-								pB.pt.x + windowHalfLength + 1)).convertTo(B,
-						CV_32F);
-
-				Scalar meanB, stdDevB;
-				meanStdDev(B, meanB, stdDevB);
-
-				Mat NCC;
-				multiply(A - meanA, B - meanB, NCC);
-				divide(NCC, stdDevA, NCC);
-				divide(NCC, stdDevB, NCC);
-				double ncc = sum(NCC)[0] / std::pow((double) windowSize, 2);
-
-				// Applying threshold to the just computed normalized cross correlation
-				if (ncc >= thresholdNCC) {
-					corrMat.at<float>(i, j) = ncc;
-//					printf("NCC templateKeypoint=[%d] sourceKeypoint=[%d] [%f]\n", i, j, ncc);
-				}
-			}
-		}
+		Mat corrMat = computeCorrelationMatrix(templateImg, sourceImg,
+				templateKeypoints, sourcesKeypoints, windowHalfLength,
+				windowSize, thresholdNCC);
 
 		// Looking for maximum by rows
 		printf("Looking for maximum by rows\n");
@@ -421,8 +431,6 @@ int main(int argc, char **argv) {
 			templateKeypointsMatches.insert(
 					map<int, int>::value_type(i, maxLoc.y));
 		}
-
-		printf("Looking for maximum by columns\n");
 
 		vector<DMatch> good_matches;
 
