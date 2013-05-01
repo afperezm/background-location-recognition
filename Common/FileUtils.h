@@ -30,6 +30,7 @@ public:
 //			vector<string>::const_iterator fileName, vector<string>* objects,
 //			bool appendLandmarkId);
 	static int readOriginalDescriptors(char* fileName);
+	static void getKeypointFilePath(string& keyfilesFolder, string& filepath);
 private:
 };
 

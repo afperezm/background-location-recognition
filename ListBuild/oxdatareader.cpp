@@ -372,25 +372,19 @@ int main(int argc, char **argv) {
 	} else if (string(argv[1]).compare("-gv") == 0) {
 
 		string keyfilesFolder(argv[2]);
-		string templateFileName(argv[3]);
 
-		Mat templateImg = imread(
-				(keyfilesFolder + "/" + string(argv[3])).c_str(),
+		string templateFilepath(keyfilesFolder + "/" + string(argv[3]));
+		Mat templateImg = imread(templateFilepath.c_str(),
 				CV_LOAD_IMAGE_GRAYSCALE);
-		templateFileName = keyfilesFolder + "/" + templateFileName;
-		templateFileName.resize(templateFileName.size() - 4);
-		templateFileName += KEYPOINT_FILE_EXTENSION;
+		FileUtils::getKeypointFilePath(keyfilesFolder, templateFilepath);
 		vector<KeyPoint> templateKeypoints = readDescriptors(
-				templateFileName.c_str());
+				templateFilepath.c_str());
 
-		string sourceKeyFilename(argv[4]);
-		Mat sourceImg = imread((keyfilesFolder + "/" + string(argv[4])).c_str(),
-				CV_LOAD_IMAGE_GRAYSCALE);
-		sourceKeyFilename = keyfilesFolder + "/" + sourceKeyFilename;
-		sourceKeyFilename.resize(sourceKeyFilename.size() - 4);
-		sourceKeyFilename += KEYPOINT_FILE_EXTENSION;
+		string sourceFilepath(keyfilesFolder + "/" + string(argv[4]));
+		Mat sourceImg = imread(sourceFilepath.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+		FileUtils::getKeypointFilePath(keyfilesFolder, sourceFilepath);
 		vector<KeyPoint> sourcesKeypoints = readDescriptors(
-				sourceKeyFilename.c_str());
+				sourceFilepath.c_str());
 
 		// Computing correlation matrix for the keypoint locations
 		printf("Computing correlation matrix for the keypoint locations\n");
@@ -452,8 +446,35 @@ int main(int argc, char **argv) {
 				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
 		imshow("Good Matches & Object detection", img_matches);
-		waitKey(0);
 
+		while (1) {
+			if (waitKey(1000) == 27) {
+				break;
+			}
+		}
+
+//		// Localize the object
+//		std::vector<Point2f> matchedSourcePoints;
+//		std::vector<Point2f> matchedTemplatePoints;
+//
+//		for (int i = 0; i < (int) good_matches.size(); i++) {
+//			//-- Get the keypoints from the good matches
+//			matchedSourcePoints.push_back(
+//					sourcesKeypoints[good_matches[i].queryIdx].pt);
+//			matchedTemplatePoints.push_back(
+//					templateKeypoints[good_matches[i].trainIdx].pt);
+//		}
+//
+//		Mat inliers;
+//		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
+//				CV_RANSAC, 3, inliers);
+//		cout << sum(inliers)[0] << endl;
+//
+//		Mat result;
+//		warpPerspective(templateImg, result, H, Size(5000, 5000));
+//		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
+//		imshow("Warped Source Image", result);
+//		waitKey(0);
 	}
 
 #if 0

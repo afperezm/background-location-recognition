@@ -148,3 +148,8 @@ int FileUtils::readOriginalDescriptors(char* fileName) {
 
 	return EXIT_SUCCESS;
 }
+
+void FileUtils::getKeypointFilePath(string& keyfilesFolder, string& filepath) {
+	filepath.resize(filepath.size() - 4);
+	filepath += KEYPOINT_FILE_EXTENSION;
+}
