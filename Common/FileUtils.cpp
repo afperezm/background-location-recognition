@@ -40,9 +40,9 @@ int FileUtils::readFolder(const char* folderName, vector<string>& files) {
 		closedir(dir);
 		// Sort alphabetically vector of folder names
 		sort(files.begin(), files.end());
-		fprintf(stdout, "Found [%d] files\n", (int) files.size());
+		fprintf(stdout, "  Found [%d] files\n", (int) files.size());
 	} else {
-		fprintf(stderr, "Could not open directory [%s]", folderName);
+		fprintf(stderr, "  Could not open directory [%s]", folderName);
 		return EXIT_FAILURE;
 	}
 

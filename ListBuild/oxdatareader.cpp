@@ -42,7 +42,7 @@ struct Features {
 	Mat descriptors;
 };
 
-vector<KeyPoint> readDescriptors(const char *filename) {
+vector<KeyPoint> readKeypoints(const char *filename) {
 
 	printf("Reading keypoints from file [%s]\n", filename);
 
@@ -62,7 +62,7 @@ vector<KeyPoint> readDescriptors(const char *filename) {
 		key_points.push_back(key_point);
 	}
 
-	printf("Read [%d] keypoints\n", (int) key_points.size());
+	printf("  Read [%d] keypoints\n", (int) key_points.size());
 
 	return key_points;
 }
@@ -289,6 +289,66 @@ Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
 	return corrMat;
 }
 
+void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
+		Mat& sourceImg, vector<KeyPoint>& sourceKeypoints,
+		vector<DMatch>& good_matches, vector<Point2f>& matchedTemplatePoints,
+		vector<Point2f>& matchedSourcePoints) {
+
+	printf("Matching source to template keypoints\n");
+
+	// Computing correlation matrix for the keypoint locations
+	printf("  Computing correlation matrix for the keypoint locations\n");
+	int windowHalfLength = 10;
+	int windowSize = 2 * windowHalfLength + 1;
+	double thresholdNCC = 0.8;
+
+	Mat corrMat = computeCorrelationMatrix(templateImg, sourceImg,
+			templateKeypoints, sourceKeypoints, windowHalfLength, windowSize,
+			thresholdNCC);
+
+	// Looking for maximum by rows
+	printf("  Looking for maximum by rows\n");
+
+	map<int, int> sourceKeypointsMatches;
+
+	for (int i = 0; i < corrMat.rows; ++i) {
+		double minVal, maxVal;
+		Point minLoc, maxLoc;
+		minMaxLoc(corrMat(Range(i, i + 1), Range(0, corrMat.cols)), &minVal,
+				&maxVal, &minLoc, &maxLoc, Mat());
+//			printf("Max for row [%d] is col [%d]\n", i, maxLoc.x);
+		sourceKeypointsMatches.insert(
+				map<int, int>::value_type(i, (int) maxLoc.x));
+	}
+
+	// Looking for maximum by rows
+	printf("  Looking for maximum by columns\n");
+
+	map<int, int> templateKeypointsMatches;
+
+	for (int i = 0; i < corrMat.cols; ++i) {
+		double minVal, maxVal;
+		Point minLoc, maxLoc;
+		minMaxLoc(corrMat(Range(0, corrMat.rows), Range(i, i + 1)), &minVal,
+				&maxVal, &minLoc, &maxLoc, Mat());
+//			printf("Max for col [%d] is row [%d]\n", i, maxLoc.y);
+		templateKeypointsMatches.insert(map<int, int>::value_type(i, maxLoc.y));
+	}
+
+	printf("  Looking for coincident matches\n");
+
+	for (int i = 0; i < corrMat.rows; ++i) {
+		if (templateKeypointsMatches.at(sourceKeypointsMatches.at(i)) == i) {
+			good_matches.push_back(DMatch(i, sourceKeypointsMatches.at(i), 1));
+			matchedSourcePoints.push_back(sourceKeypoints[i].pt);
+			matchedTemplatePoints.push_back(
+					templateKeypoints[sourceKeypointsMatches.at(i)].pt);
+		}
+	}
+
+	printf("  Matched [%d] keypoints\n", (int) good_matches.size());
+}
+
 int main(int argc, char **argv) {
 
 	Mat A = Mat::ones(3, 3, CV_32F);
@@ -376,69 +436,25 @@ int main(int argc, char **argv) {
 		string templateFilepath(keyfilesFolder + "/" + string(argv[3]));
 		Mat templateImg = imread(templateFilepath.c_str(),
 				CV_LOAD_IMAGE_GRAYSCALE);
+
 		FileUtils::getKeypointFilePath(keyfilesFolder, templateFilepath);
-		vector<KeyPoint> templateKeypoints = readDescriptors(
+		vector<KeyPoint> templateKeypoints = readKeypoints(
 				templateFilepath.c_str());
 
 		string sourceFilepath(keyfilesFolder + "/" + string(argv[4]));
 		Mat sourceImg = imread(sourceFilepath.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+
 		FileUtils::getKeypointFilePath(keyfilesFolder, sourceFilepath);
-		vector<KeyPoint> sourcesKeypoints = readDescriptors(
+		vector<KeyPoint> sourcesKeypoints = readKeypoints(
 				sourceFilepath.c_str());
 
-		// Computing correlation matrix for the keypoint locations
-		printf("Computing correlation matrix for the keypoint locations\n");
-		int windowHalfLength = 10;
-		int windowSize = 2 * windowHalfLength + 1;
-		double thresholdNCC = 0.8;
-
-		Mat corrMat = computeCorrelationMatrix(templateImg, sourceImg,
-				templateKeypoints, sourcesKeypoints, windowHalfLength,
-				windowSize, thresholdNCC);
-
-		// Looking for maximum by rows
-		printf("Looking for maximum by rows\n");
-
-		map<int, int> sourceKeypointsMatches;
-
-		for (int i = 0; i < corrMat.rows; ++i) {
-			double minVal, maxVal;
-			Point minLoc, maxLoc;
-			minMaxLoc(corrMat(Range(i, i + 1), Range(0, corrMat.cols)), &minVal,
-					&maxVal, &minLoc, &maxLoc, Mat());
-//			printf("Max for row [%d] is col [%d]\n", i, maxLoc.x);
-			sourceKeypointsMatches.insert(
-					map<int, int>::value_type(i, (int) maxLoc.x));
-		}
-
-		// Looking for maximum by rows
-		printf("Looking for maximum by rows\n");
-
-		map<int, int> templateKeypointsMatches;
-
-		for (int i = 0; i < corrMat.cols; ++i) {
-			double minVal, maxVal;
-			Point minLoc, maxLoc;
-			minMaxLoc(corrMat(Range(0, corrMat.rows), Range(i, i + 1)), &minVal,
-					&maxVal, &minLoc, &maxLoc, Mat());
-//			printf("Max for col [%d] is row [%d]\n", i, maxLoc.y);
-			templateKeypointsMatches.insert(
-					map<int, int>::value_type(i, maxLoc.y));
-		}
-
 		vector<DMatch> good_matches;
+		vector<Point2f> matchedSourcePoints;
+		vector<Point2f> matchedTemplatePoints;
 
-		printf("Looking for coincident matches\n");
-
-		for (int i = 0; i < corrMat.rows; ++i) {
-			if (templateKeypointsMatches.at(sourceKeypointsMatches.at(i))
-					== i) {
-				good_matches.push_back(
-						DMatch(i, sourceKeypointsMatches.at(i), 1));
-			}
-		}
-
-		printf("Matched points: [%d]\n", (int) good_matches.size());
+		matchKeypoints(templateImg, templateKeypoints, sourceImg,
+				sourcesKeypoints, good_matches, matchedTemplatePoints,
+				matchedSourcePoints);
 
 		Mat img_matches;
 		drawMatches(templateImg, templateKeypoints, sourceImg, sourcesKeypoints,
@@ -447,24 +463,6 @@ int main(int argc, char **argv) {
 		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
 		imshow("Good Matches & Object detection", img_matches);
 
-		while (1) {
-			if (waitKey(1000) == 27) {
-				break;
-			}
-		}
-
-//		// Localize the object
-//		std::vector<Point2f> matchedSourcePoints;
-//		std::vector<Point2f> matchedTemplatePoints;
-//
-//		for (int i = 0; i < (int) good_matches.size(); i++) {
-//			//-- Get the keypoints from the good matches
-//			matchedSourcePoints.push_back(
-//					sourcesKeypoints[good_matches[i].queryIdx].pt);
-//			matchedTemplatePoints.push_back(
-//					templateKeypoints[good_matches[i].trainIdx].pt);
-//		}
-//
 //		Mat inliers;
 //		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
 //				CV_RANSAC, 3, inliers);
@@ -474,7 +472,13 @@ int main(int argc, char **argv) {
 //		warpPerspective(templateImg, result, H, Size(5000, 5000));
 //		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
 //		imshow("Warped Source Image", result);
-//		waitKey(0);
+
+		while (1) {
+			if (waitKey(1000) == 27) {
+				break;
+			}
+		}
+
 	}
 
 #if 0
