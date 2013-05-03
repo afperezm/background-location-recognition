@@ -223,9 +223,24 @@ template<class K, class V> vector<K> getMapKeys(map<K, V>& images) {
 	return keys;
 }
 
+/**
+ * Computes the correlation matrix between two images for a given set of keypoint locations.
+ *
+ * @param templateImg
+ * @param sourceImg
+ * @param templateKeypoints
+ * @param sourcesKeypoints
+ * @param windowHalfLength
+ * @param windowSize
+ * @param thresholdNCC
+ * @param distanceThreshold
+ *
+ * @return Matrix of normalized correlation coefficients for template and source keypoints
+ */
 Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
 		vector<KeyPoint>& templateKeypoints, vector<KeyPoint>& sourcesKeypoints,
-		int& windowHalfLength, int& windowSize, double& thresholdNCC) {
+		int& windowHalfLength, int& windowSize, double& thresholdNCC,
+		double& distanceThreshold) {
 
 	Mat corrMat = Mat::zeros(templateKeypoints.size(), sourcesKeypoints.size(),
 			CV_32F);
@@ -241,14 +256,7 @@ Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
 		}
 
 		Mat A;
-		templateImg(
-				Range(pA.pt.y - windowHalfLength,
-						pA.pt.y + windowHalfLength + 1),
-				Range(pA.pt.x - windowHalfLength,
-						pA.pt.x + windowHalfLength + 1)).clone().convertTo(A,
-				CV_32F);
 		Scalar meanA, stdDevA;
-		meanStdDev(A, meanA, stdDevA);
 
 		// Loop over keypoints vector of source image
 		for (int j = 0; j < (int) sourcesKeypoints.size(); ++j) {
@@ -260,7 +268,24 @@ Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
 				continue;
 			}
 
-			// Computing normalized cross correlation for the patches A and B
+			// Ignore features which are far one another
+			if (abs(pA.pt.x - pB.pt.x) > distanceThreshold
+					|| abs(pA.pt.y - pB.pt.y) > distanceThreshold) {
+				continue;
+			}
+
+			// Extract patch from the template image (at the beginning of the cycle)
+			if (A.rows == 0 && A.cols == 0) {
+				templateImg(
+						Range(pA.pt.y - windowHalfLength,
+								pA.pt.y + windowHalfLength + 1),
+						Range(pA.pt.x - windowHalfLength,
+								pA.pt.x + windowHalfLength + 1)).clone().convertTo(
+						A, CV_32F);
+				meanStdDev(A, meanA, stdDevA);
+			}
+
+			// Extract path from the source image
 			Mat B;
 			sourceImg(
 					Range(pB.pt.y - windowHalfLength,
@@ -272,6 +297,7 @@ Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
 			Scalar meanB, stdDevB;
 			meanStdDev(B, meanB, stdDevB);
 
+			// Computing normalized cross correlation for the patches A and B
 			Mat NCC;
 			multiply(A - meanA, B - meanB, NCC);
 			divide(NCC, stdDevA, NCC);
@@ -281,7 +307,6 @@ Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
 			// Applying threshold to the just computed normalized cross correlation
 			if (ncc >= thresholdNCC) {
 				corrMat.at<float>(i, j) = ncc;
-//					printf("NCC templateKeypoint=[%d] sourceKeypoint=[%d] [%f]\n", i, j, ncc);
 			}
 		}
 	}
@@ -289,6 +314,19 @@ Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
 	return corrMat;
 }
 
+/**
+ * Finds a set of putative matches based on proximity and similarity applied
+ * to a pair of images for which a set of keypoints is available.
+ *
+ * @param templateImg Reference/template image
+ * @param templateKeypoints Vector of keypoints from the reference image
+ * @param sourceImg Source image
+ * @param sourceKeypoints Vector of keypoints from the source image
+ *
+ * @param good_matches Vector where the putative matches will be returned
+ * @param matchedTemplatePoints Vector where the best matches for the template keypoints will be returned
+ * @param matchedSourcePoints Vector where the best matches for the source keypoints will be returned
+ */
 void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 		Mat& sourceImg, vector<KeyPoint>& sourceKeypoints,
 		vector<DMatch>& good_matches, vector<Point2f>& matchedTemplatePoints,
@@ -301,10 +339,11 @@ void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	int windowHalfLength = 10;
 	int windowSize = 2 * windowHalfLength + 1;
 	double thresholdNCC = 0.8;
+	double distanceThreshold = 500.0;
 
 	Mat corrMat = computeCorrelationMatrix(templateImg, sourceImg,
 			templateKeypoints, sourceKeypoints, windowHalfLength, windowSize,
-			thresholdNCC);
+			thresholdNCC, distanceThreshold);
 
 	// Looking for maximum by rows
 	printf("  Looking for maximum by rows\n");
@@ -316,7 +355,6 @@ void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 		Point minLoc, maxLoc;
 		minMaxLoc(corrMat(Range(i, i + 1), Range(0, corrMat.cols)), &minVal,
 				&maxVal, &minLoc, &maxLoc, Mat());
-//			printf("Max for row [%d] is col [%d]\n", i, maxLoc.x);
 		sourceKeypointsMatches.insert(
 				map<int, int>::value_type(i, (int) maxLoc.x));
 	}
@@ -331,7 +369,6 @@ void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 		Point minLoc, maxLoc;
 		minMaxLoc(corrMat(Range(0, corrMat.rows), Range(i, i + 1)), &minVal,
 				&maxVal, &minLoc, &maxLoc, Mat());
-//			printf("Max for col [%d] is row [%d]\n", i, maxLoc.y);
 		templateKeypointsMatches.insert(map<int, int>::value_type(i, maxLoc.y));
 	}
 
@@ -362,6 +399,59 @@ int main(int argc, char **argv) {
 //				argv[0]);
 //		return EXIT_FAILURE;
 //	}
+
+	if (string(argv[1]).compare("-gv") == 0) {
+
+		// Load template image and keypoints file
+		string templateImgFilepath(argv[2]);
+		Mat templateImg = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
+
+		string templateKeypointsFilepath(argv[3]);
+		vector<KeyPoint> templateKeypoints = readKeypoints(
+				templateKeypointsFilepath.c_str());
+
+		// Load sources image and keypoints file
+		string sourceImgFilepath(argv[4]);
+		Mat sourceImg = imread(argv[4], CV_LOAD_IMAGE_GRAYSCALE);
+
+		string sourceKeypointsFilepath(argv[5]);
+		vector<KeyPoint> sourceKeypoints = readKeypoints(
+				sourceKeypointsFilepath.c_str());
+
+		vector<DMatch> good_matches;
+		vector<Point2f> matchedSourcePoints;
+		vector<Point2f> matchedTemplatePoints;
+
+		// 1) Find putative matches
+		matchKeypoints(templateImg, templateKeypoints, sourceImg,
+				sourceKeypoints, good_matches, matchedTemplatePoints,
+				matchedSourcePoints);
+
+		Mat img_matches;
+		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
+		imshow("Good Matches & Object detection", img_matches);
+
+		//		Mat inliers;
+		//		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
+		//				CV_RANSAC, 3, inliers);
+		//		cout << sum(inliers)[0] << endl;
+		//
+		//		Mat result;
+		//		warpPerspective(templateImg, result, H, Size(5000, 5000));
+		//		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
+		//		imshow("Warped Source Image", result);
+
+		while (1) {
+			if (waitKey(1000) == 27) {
+				break;
+			}
+		}
+
+		return EXIT_SUCCESS;
+	}
 
 	vector<string> folderFiles;
 	int result = FileUtils::readFolder(argv[2], folderFiles);
@@ -429,56 +519,6 @@ int main(int argc, char **argv) {
 				outputFile.close();
 			}
 		}
-	} else if (string(argv[1]).compare("-gv") == 0) {
-
-		string keyfilesFolder(argv[2]);
-
-		string templateFilepath(keyfilesFolder + "/" + string(argv[3]));
-		Mat templateImg = imread(templateFilepath.c_str(),
-				CV_LOAD_IMAGE_GRAYSCALE);
-
-		FileUtils::getKeypointFilePath(keyfilesFolder, templateFilepath);
-		vector<KeyPoint> templateKeypoints = readKeypoints(
-				templateFilepath.c_str());
-
-		string sourceFilepath(keyfilesFolder + "/" + string(argv[4]));
-		Mat sourceImg = imread(sourceFilepath.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
-
-		FileUtils::getKeypointFilePath(keyfilesFolder, sourceFilepath);
-		vector<KeyPoint> sourcesKeypoints = readKeypoints(
-				sourceFilepath.c_str());
-
-		vector<DMatch> good_matches;
-		vector<Point2f> matchedSourcePoints;
-		vector<Point2f> matchedTemplatePoints;
-
-		matchKeypoints(templateImg, templateKeypoints, sourceImg,
-				sourcesKeypoints, good_matches, matchedTemplatePoints,
-				matchedSourcePoints);
-
-		Mat img_matches;
-		drawMatches(templateImg, templateKeypoints, sourceImg, sourcesKeypoints,
-				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
-		imshow("Good Matches & Object detection", img_matches);
-
-//		Mat inliers;
-//		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
-//				CV_RANSAC, 3, inliers);
-//		cout << sum(inliers)[0] << endl;
-//
-//		Mat result;
-//		warpPerspective(templateImg, result, H, Size(5000, 5000));
-//		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
-//		imshow("Warped Source Image", result);
-
-		while (1) {
-			if (waitKey(1000) == 27) {
-				break;
-			}
-		}
-
 	}
 
 #if 0
