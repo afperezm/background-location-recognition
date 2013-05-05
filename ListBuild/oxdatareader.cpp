@@ -62,6 +62,11 @@ vector<KeyPoint> readKeypoints(const char *filename) {
 		key_points.push_back(key_point);
 	}
 
+	delete[] keys;
+	if (info != NULL) {
+		delete[] info;
+	}
+
 	printf("  Read [%d] keypoints\n", (int) key_points.size());
 
 	return key_points;
@@ -318,32 +323,34 @@ Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
  * Finds a set of putative matches based on proximity and similarity applied
  * to a pair of images for which a set of keypoints is available.
  *
- * @param templateImg Reference/template image
- * @param templateKeypoints Vector of keypoints from the reference image
- * @param sourceImg Source image
- * @param sourceKeypoints Vector of keypoints from the source image
+ * @param templateImg Reference o the template image
+ * @param templateKeypoints Reference to the vector of keypoints from the template image
+ * @param sourceImg Reference to the source image
+ * @param sourceKeypoints Reference to the vector of keypoints from the source image
+ * @param proximityThreshold
+ * @param similarityThreshold
  *
- * @param good_matches Vector where the putative matches will be returned
- * @param matchedTemplatePoints Vector where the best matches for the template keypoints will be returned
- * @param matchedSourcePoints Vector where the best matches for the source keypoints will be returned
+ * @param good_matches Reference to the vector where the putative matches will be returned
+ * @param matchedTemplatePoints Reference to the vector where the best matches for the template keypoints will be returned
+ * @param matchedSourcePoints Reference to the vector where the best matches for the source keypoints will be returned
  */
 void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 		Mat& sourceImg, vector<KeyPoint>& sourceKeypoints,
 		vector<DMatch>& good_matches, vector<Point2f>& matchedTemplatePoints,
-		vector<Point2f>& matchedSourcePoints) {
+		vector<Point2f>& matchedSourcePoints, double& proximityThreshold,
+		double& similarityThreshold) {
 
 	printf("Matching source to template keypoints\n");
+	clock_t start = clock();
 
 	// Computing correlation matrix for the keypoint locations
 	printf("  Computing correlation matrix for the keypoint locations\n");
 	int windowHalfLength = 10;
 	int windowSize = 2 * windowHalfLength + 1;
-	double thresholdNCC = 0.8;
-	double distanceThreshold = 500.0;
 
 	Mat corrMat = computeCorrelationMatrix(templateImg, sourceImg,
 			templateKeypoints, sourceKeypoints, windowHalfLength, windowSize,
-			thresholdNCC, distanceThreshold);
+			similarityThreshold, proximityThreshold);
 
 	// Looking for maximum by rows
 	printf("  Looking for maximum by rows\n");
@@ -375,6 +382,7 @@ void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	printf("  Looking for coincident matches\n");
 
 	for (int i = 0; i < corrMat.rows; ++i) {
+		// sourceKeypointsMatches.at(i) is the best template keypoint match for the ith source keypoint
 		if (templateKeypointsMatches.at(sourceKeypointsMatches.at(i)) == i) {
 			good_matches.push_back(DMatch(i, sourceKeypointsMatches.at(i), 1));
 			matchedSourcePoints.push_back(sourceKeypoints[i].pt);
@@ -383,7 +391,10 @@ void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 		}
 	}
 
-	printf("  Matched [%d] keypoints\n", (int) good_matches.size());
+	clock_t end = clock();
+
+	printf("  Found [%d] putative matches in [%0.3fs]\n",
+			(int) good_matches.size(), (double) (end - start) / CLOCKS_PER_SEC);
 }
 
 int main(int argc, char **argv) {
@@ -402,7 +413,7 @@ int main(int argc, char **argv) {
 
 	if (string(argv[1]).compare("-gv") == 0) {
 
-		// Load template image and keypoints file
+		// Load template image and template keypoints file
 		string templateImgFilepath(argv[2]);
 		Mat templateImg = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -410,7 +421,7 @@ int main(int argc, char **argv) {
 		vector<KeyPoint> templateKeypoints = readKeypoints(
 				templateKeypointsFilepath.c_str());
 
-		// Load sources image and keypoints file
+		// Load source image and source keypoints file
 		string sourceImgFilepath(argv[4]);
 		Mat sourceImg = imread(argv[4], CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -418,31 +429,102 @@ int main(int argc, char **argv) {
 		vector<KeyPoint> sourceKeypoints = readKeypoints(
 				sourceKeypointsFilepath.c_str());
 
+		// 1) Find putative matches
 		vector<DMatch> good_matches;
 		vector<Point2f> matchedSourcePoints;
 		vector<Point2f> matchedTemplatePoints;
 
-		// 1) Find putative matches
+		double proximityThreshold, similarityThreshold, ransacReprojThreshold;
+
+		if (argc >= 7) {
+			ransacReprojThreshold = atof(argv[6]);
+		} else {
+			ransacReprojThreshold = 10.0;
+		}
+		if (argc >= 8) {
+			proximityThreshold = atof(argv[7]);
+		} else {
+			proximityThreshold = 500.0;
+		}
+		if (argc >= 9) {
+			similarityThreshold = atof(argv[8]);
+		} else {
+			similarityThreshold = 0.8;
+		}
+
 		matchKeypoints(templateImg, templateKeypoints, sourceImg,
 				sourceKeypoints, good_matches, matchedTemplatePoints,
-				matchedSourcePoints);
+				matchedSourcePoints, proximityThreshold, similarityThreshold);
 
-		Mat img_matches;
+//		Mat img_matches;
+//		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+//				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+//				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+//		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
+//		imshow("Good Matches & Object detection", img_matches);
+//
+//		while (1) {
+//			if (waitKey(1000) == 27) {
+//				break;
+//			}
+//		}
+
+// 2) Compute an affine transformation
+		Mat inliers_idx;
+		clock_t start = clock();
+		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
+				CV_RANSAC, ransacReprojThreshold, inliers_idx);
+		clock_t end = clock();
+		printf("  Computed homography in [%0.3fs] and found [%d] inliers\n",
+				(double) (end - start) / CLOCKS_PER_SEC,
+				(int) sum(inliers_idx)[0]);
+
+		vector<DMatch> inliers;
+		Mat templateInliers((int) sum(inliers_idx)[0], 2,
+				DataType<float>::type);
+		Mat sourceInliers((int) sum(inliers_idx)[0], 2, DataType<float>::type);
+		int inlierCount = 0;
+		for (int i = 0; i < inliers_idx.rows; ++i) {
+			if ((int) inliers_idx.at<uchar>(i) == 1) {
+				inliers.push_back(good_matches.at(i));
+				templateInliers.at<float>(inlierCount, 0) =
+						templateKeypoints.at(good_matches.at(i).queryIdx).pt.x;
+				templateInliers.at<float>(inlierCount, 1) =
+						templateKeypoints.at(good_matches.at(i).queryIdx).pt.y;
+
+				sourceInliers.at<float>(inlierCount, 0) = sourceKeypoints.at(
+						good_matches.at(i).trainIdx).pt.x;
+				sourceInliers.at<float>(inlierCount, 1) = sourceKeypoints.at(
+						good_matches.at(i).trainIdx).pt.y;
+				inlierCount++;
+//				templateInliers.push_back(
+//						templateKeypoints.at(good_matches.at(i).queryIdx).pt);
+//				sourceInliers.push_back(
+//						sourceKeypoints.at(good_matches.at(i).trainIdx).pt);
+			}
+		}
+
+		Mat inlier_matches;
 		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
-				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+				inliers, inlier_matches, Scalar::all(-1), Scalar::all(-1),
 				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
-		imshow("Good Matches & Object detection", img_matches);
+		namedWindow("Inlier matches", CV_WINDOW_NORMAL);
+		imshow("Inlier matches", inlier_matches);
 
-		//		Mat inliers;
-		//		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
-		//				CV_RANSAC, 3, inliers);
-		//		cout << sum(inliers)[0] << endl;
-		//
-		//		Mat result;
-		//		warpPerspective(templateImg, result, H, Size(5000, 5000));
-		//		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
-		//		imshow("Warped Source Image", result);
+		while (1) {
+			if (waitKey(1000) == 27) {
+				break;
+			}
+		}
+
+		Mat warp_dst = Mat::zeros(sourceImg.rows, sourceImg.cols,
+				sourceImg.type());
+		Mat Hp = getPerspectiveTransform(
+				sourceInliers(Range(0, 4), Range(0, 2)),
+				templateInliers(Range(0, 4), Range(0, 2)));
+		warpPerspective(sourceImg, warp_dst, Hp, warp_dst.size());
+		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
+		imshow("Warped Source Image", warp_dst);
 
 		while (1) {
 			if (waitKey(1000) == 27) {
