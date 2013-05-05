@@ -267,6 +267,9 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 	Mat corrMat = Mat::zeros(templateKeypoints.size(), sourcesKeypoints.size(),
 			CV_32F);
 
+	Mat B;
+	Scalar meanB, stdDevB;
+
 	// Loop over keypoints vector of template image
 	for (int i = 0; i < (int) templateKeypoints.size(); ++i) {
 		KeyPoint pA = templateKeypoints[i];
@@ -302,13 +305,12 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 						Range(pA.pt.y - windowHalfLength,
 								pA.pt.y + windowHalfLength + 1),
 						Range(pA.pt.x - windowHalfLength,
-								pA.pt.x + windowHalfLength + 1)).clone().convertTo(
-						A, CV_32F);
+								pA.pt.x + windowHalfLength + 1)).convertTo(A,
+						CV_32F);
 				meanStdDev(A, meanA, stdDevA);
 			}
 
 			// Extract path from the source image
-			Mat B;
 			sourceImg(
 					Range(pB.pt.y - windowHalfLength,
 							pB.pt.y + windowHalfLength + 1),
@@ -316,7 +318,6 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 							pB.pt.x + windowHalfLength + 1)).convertTo(B,
 					CV_32F);
 
-			Scalar meanB, stdDevB;
 			meanStdDev(B, meanB, stdDevB);
 
 			// Computing normalized cross correlation for the patches A and B
