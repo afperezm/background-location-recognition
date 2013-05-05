@@ -7,6 +7,7 @@
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/legacy/legacy.hpp>
+#include <opencv2/features2d/features2d.hpp>
 #include <string>
 #include <vector>
 #include <map>
@@ -42,16 +43,25 @@ struct Features {
 	Mat descriptors;
 };
 
-vector<KeyPoint> readKeypoints(const char *filename) {
+/**
+ *
+ * @param filename Path to the a features file.
+ * @param keypoints Keypoints stored in the specified input file.
+ * @param feature_descriptors Descriptors stored in the specified input file. Row i is the descriptor for keypoint i.
+ */
+void readKeypoints(const char *filename, vector<KeyPoint>& keypoints,
+		Mat& descriptors) {
 
 	printf("Reading keypoints from file [%s]\n", filename);
-
-	vector<KeyPoint> key_points;
 
 	int num_keys = 0;
 	short int *keys;
 	keypt_t* info = NULL;
 	num_keys = ReadKeyFile(filename, &keys, &info);
+
+	int dim = 128;
+
+	descriptors = Mat(num_keys, dim, DataType<float>::type);
 
 	for (int i = 0; i < num_keys; i++) {
 		KeyPoint key_point = KeyPoint();
@@ -59,7 +69,13 @@ vector<KeyPoint> readKeypoints(const char *filename) {
 		key_point.pt.y = info[i].y;
 		key_point.size = info[i].scale;
 		key_point.angle = info[i].orient;
-		key_points.push_back(key_point);
+
+		keypoints.push_back(key_point);
+
+		for (int j = i * dim; j < (i + 1) * dim; j++) {
+			descriptors.at<float>(i, j - i * dim) = (float) keys[j];
+		}
+
 	}
 
 	delete[] keys;
@@ -67,9 +83,8 @@ vector<KeyPoint> readKeypoints(const char *filename) {
 		delete[] info;
 	}
 
-	printf("  Read [%d] keypoints\n", (int) key_points.size());
+	printf("  Read [%d] keypoints\n", (int) keypoints.size());
 
-	return key_points;
 }
 
 void createListDbTxt(const char* folderName,
@@ -413,29 +428,35 @@ int main(int argc, char **argv) {
 
 	if (string(argv[1]).compare("-gv") == 0) {
 
+		clock_t start, end;
+
 		// Load template image and template keypoints file
 		string templateImgFilepath(argv[2]);
 		Mat templateImg = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
 		string templateKeypointsFilepath(argv[3]);
-		vector<KeyPoint> templateKeypoints = readKeypoints(
-				templateKeypointsFilepath.c_str());
+		vector<KeyPoint> templateKeypoints;
+		Mat templateDescriptors;
+		readKeypoints(templateKeypointsFilepath.c_str(), templateKeypoints,
+				templateDescriptors);
 
 		// Load source image and source keypoints file
 		string sourceImgFilepath(argv[4]);
 		Mat sourceImg = imread(argv[4], CV_LOAD_IMAGE_GRAYSCALE);
 
 		string sourceKeypointsFilepath(argv[5]);
-		vector<KeyPoint> sourceKeypoints = readKeypoints(
-				sourceKeypointsFilepath.c_str());
+		vector<KeyPoint> sourceKeypoints;
+		Mat sourceDescriptors;
+		readKeypoints(sourceKeypointsFilepath.c_str(), sourceKeypoints,
+				sourceDescriptors);
 
 		// 1) Find putative matches
-		vector<DMatch> good_matches;
+		vector<DMatch> matches, good_matches;
 		vector<Point2f> matchedSourcePoints;
 		vector<Point2f> matchedTemplatePoints;
 
-		double proximityThreshold, similarityThreshold, ransacReprojThreshold;
-
+		double ransacReprojThreshold;
+		double proximityThreshold, similarityThreshold;
 		if (argc >= 7) {
 			ransacReprojThreshold = atof(argv[6]);
 		} else {
@@ -451,10 +472,26 @@ int main(int argc, char **argv) {
 		} else {
 			similarityThreshold = 0.8;
 		}
-
 		matchKeypoints(templateImg, templateKeypoints, sourceImg,
 				sourceKeypoints, good_matches, matchedTemplatePoints,
 				matchedSourcePoints, proximityThreshold, similarityThreshold);
+
+//		FlannBasedMatcher matcher;
+//		start = clock();
+//		matcher.match(sourceDescriptors, templateDescriptors, matches);
+//		for (int i = 0; i < (int) matches.size(); ++i) {
+//			if (matches[i].distance < proximityThreshold) {
+//				good_matches.push_back(matches[i]);
+//				matchedSourcePoints.push_back(
+//						sourceKeypoints[matches[i].queryIdx].pt);
+//				matchedTemplatePoints.push_back(
+//						templateKeypoints[matches[i].trainIdx].pt);
+//			}
+//		}
+//		end = clock();
+//		printf("  Found [%d] putative matches in [%0.3fs]\n",
+//				(int) good_matches.size(),
+//				(double) (end - start) / CLOCKS_PER_SEC);
 
 //		Mat img_matches;
 //		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
@@ -467,14 +504,14 @@ int main(int argc, char **argv) {
 //			if (waitKey(1000) == 27) {
 //				break;
 //			}
-//		}
+		//}
 
-// 2) Compute an affine transformation
+		// 2) Compute a projective transformation
 		Mat inliers_idx;
-		clock_t start = clock();
+		start = clock();
 		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
 				CV_RANSAC, ransacReprojThreshold, inliers_idx);
-		clock_t end = clock();
+		end = clock();
 		printf("  Computed homography in [%0.3fs] and found [%d] inliers\n",
 				(double) (end - start) / CLOCKS_PER_SEC,
 				(int) sum(inliers_idx)[0]);
@@ -483,24 +520,10 @@ int main(int argc, char **argv) {
 		Mat templateInliers((int) sum(inliers_idx)[0], 2,
 				DataType<float>::type);
 		Mat sourceInliers((int) sum(inliers_idx)[0], 2, DataType<float>::type);
-		int inlierCount = 0;
+
 		for (int i = 0; i < inliers_idx.rows; ++i) {
 			if ((int) inliers_idx.at<uchar>(i) == 1) {
 				inliers.push_back(good_matches.at(i));
-				templateInliers.at<float>(inlierCount, 0) =
-						templateKeypoints.at(good_matches.at(i).queryIdx).pt.x;
-				templateInliers.at<float>(inlierCount, 1) =
-						templateKeypoints.at(good_matches.at(i).queryIdx).pt.y;
-
-				sourceInliers.at<float>(inlierCount, 0) = sourceKeypoints.at(
-						good_matches.at(i).trainIdx).pt.x;
-				sourceInliers.at<float>(inlierCount, 1) = sourceKeypoints.at(
-						good_matches.at(i).trainIdx).pt.y;
-				inlierCount++;
-//				templateInliers.push_back(
-//						templateKeypoints.at(good_matches.at(i).queryIdx).pt);
-//				sourceInliers.push_back(
-//						sourceKeypoints.at(good_matches.at(i).trainIdx).pt);
 			}
 		}
 
@@ -517,20 +540,34 @@ int main(int argc, char **argv) {
 			}
 		}
 
-		Mat warp_dst = Mat::zeros(templateImg.rows, templateImg.cols,
-				sourceImg.type());
-		Mat Hp = getPerspectiveTransform(
-				sourceInliers(Range(0, 4), Range(0, 2)),
-				templateInliers(Range(0, 4), Range(0, 2)));
-		warpPerspective(sourceImg, warp_dst, Hp, warp_dst.size());
-		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
-		imshow("Warped Source Image", warp_dst);
+		// 3) Compute an affine transformation using some of the inliers obtained from the projective transformation
 
-		while (1) {
-			if (waitKey(1000) == 27) {
-				break;
-			}
-		}
+//		int inlierCount = 0;
+//				templateInliers.at<float>(inlierCount, 0) =
+//						templateKeypoints.at(good_matches.at(i).trainIdx).pt.x;
+//				templateInliers.at<float>(inlierCount, 1) =
+//						templateKeypoints.at(good_matches.at(i).trainIdx).pt.y;
+//
+//				sourceInliers.at<float>(inlierCount, 0) = sourceKeypoints.at(
+//						good_matches.at(i).queryIdx).pt.x;
+//				sourceInliers.at<float>(inlierCount, 1) = sourceKeypoints.at(
+//						good_matches.at(i).queryIdx).pt.y;
+//				inlierCount++;
+
+//		Mat warp_dst = Mat::zeros(templateImg.rows, templateImg.cols,
+//				sourceImg.type());
+//		Mat Hp = getPerspectiveTransform(
+//				sourceInliers(Range(0, 4), Range(0, 2)),
+//				templateInliers(Range(0, 4), Range(0, 2)));
+//		warpPerspective(sourceImg, warp_dst, Hp, warp_dst.size());
+//		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
+//		imshow("Warped Source Image", warp_dst);
+//
+//		while (1) {
+//			if (waitKey(1000) == 27) {
+//				break;
+//			}
+//		}
 
 		return EXIT_SUCCESS;
 	}
