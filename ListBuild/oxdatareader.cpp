@@ -430,7 +430,7 @@ int main(int argc, char **argv) {
 
 		clock_t start, end;
 
-		// Load template image and template keypoints file
+		// 1) Load template image and template keypoints file
 		string templateImgFilepath(argv[2]);
 		Mat templateImg = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -440,7 +440,7 @@ int main(int argc, char **argv) {
 		readKeypoints(templateKeypointsFilepath.c_str(), templateKeypoints,
 				templateDescriptors);
 
-		// Load source image and source keypoints file
+		// 2) Load source image and source keypoints file
 		string sourceImgFilepath(argv[4]);
 		Mat sourceImg = imread(argv[4], CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -450,8 +450,8 @@ int main(int argc, char **argv) {
 		readKeypoints(sourceKeypointsFilepath.c_str(), sourceKeypoints,
 				sourceDescriptors);
 
-		// 1) Find putative matches
-		vector<DMatch> matches, good_matches;
+		// 3) Find putative matches
+		vector<DMatch> good_matches;
 		vector<Point2f> matchedSourcePoints;
 		vector<Point2f> matchedTemplatePoints;
 
@@ -476,37 +476,21 @@ int main(int argc, char **argv) {
 				sourceKeypoints, good_matches, matchedTemplatePoints,
 				matchedSourcePoints, proximityThreshold, similarityThreshold);
 
-//		FlannBasedMatcher matcher;
-//		start = clock();
-//		matcher.match(sourceDescriptors, templateDescriptors, matches);
-//		for (int i = 0; i < (int) matches.size(); ++i) {
-//			if (matches[i].distance < proximityThreshold) {
-//				good_matches.push_back(matches[i]);
-//				matchedSourcePoints.push_back(
-//						sourceKeypoints[matches[i].queryIdx].pt);
-//				matchedTemplatePoints.push_back(
-//						templateKeypoints[matches[i].trainIdx].pt);
-//			}
-//		}
-//		end = clock();
-//		printf("  Found [%d] putative matches in [%0.3fs]\n",
-//				(int) good_matches.size(),
-//				(double) (end - start) / CLOCKS_PER_SEC);
+		// 4) Draw resulting putative matches
+		Mat img_matches;
+		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
+		imshow("Good Matches & Object detection", img_matches);
 
-//		Mat img_matches;
-//		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
-//				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-//				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-//		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
-//		imshow("Good Matches & Object detection", img_matches);
-//
-//		while (1) {
-//			if (waitKey(1000) == 27) {
-//				break;
-//			}
-		//}
+		while (1) {
+			if (waitKey(1000) == 27) {
+				break;
+			}
+		}
 
-		// 2) Compute a projective transformation
+		// 5) Compute a projective transformation
 		Mat inliers_idx;
 		start = clock();
 		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
@@ -527,6 +511,7 @@ int main(int argc, char **argv) {
 			}
 		}
 
+		// 6) Drawing resulting inliers
 		Mat inlier_matches;
 		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
 				inliers, inlier_matches, Scalar::all(-1), Scalar::all(-1),
@@ -539,35 +524,6 @@ int main(int argc, char **argv) {
 				break;
 			}
 		}
-
-		// 3) Compute an affine transformation using some of the inliers obtained from the projective transformation
-
-//		int inlierCount = 0;
-//				templateInliers.at<float>(inlierCount, 0) =
-//						templateKeypoints.at(good_matches.at(i).trainIdx).pt.x;
-//				templateInliers.at<float>(inlierCount, 1) =
-//						templateKeypoints.at(good_matches.at(i).trainIdx).pt.y;
-//
-//				sourceInliers.at<float>(inlierCount, 0) = sourceKeypoints.at(
-//						good_matches.at(i).queryIdx).pt.x;
-//				sourceInliers.at<float>(inlierCount, 1) = sourceKeypoints.at(
-//						good_matches.at(i).queryIdx).pt.y;
-//				inlierCount++;
-
-//		Mat warp_dst = Mat::zeros(templateImg.rows, templateImg.cols,
-//				sourceImg.type());
-//		Mat Hp = getPerspectiveTransform(
-//				sourceInliers(Range(0, 4), Range(0, 2)),
-//				templateInliers(Range(0, 4), Range(0, 2)));
-//		warpPerspective(sourceImg, warp_dst, Hp, warp_dst.size());
-//		namedWindow("Warped Source Image", CV_WINDOW_NORMAL);
-//		imshow("Warped Source Image", warp_dst);
-//
-//		while (1) {
-//			if (waitKey(1000) == 27) {
-//				break;
-//			}
-//		}
 
 		return EXIT_SUCCESS;
 	}
