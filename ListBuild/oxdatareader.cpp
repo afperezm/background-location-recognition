@@ -259,8 +259,10 @@ template<class K, class V> vector<K> getMapKeys(map<K, V>& images) {
  */
 Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 		vector<KeyPoint>& templateKeypoints, vector<KeyPoint>& sourcesKeypoints,
-		int& windowHalfLength, int& windowSize, double& thresholdNCC,
+		int& windowHalfLength, double& thresholdNCC,
 		double& distanceThreshold) {
+
+	int windowSize = 2 * windowHalfLength + 1;
 
 	Mat corrMat = Mat::zeros(templateKeypoints.size(), sourcesKeypoints.size(),
 			CV_32F);
@@ -361,10 +363,9 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	// Computing correlation matrix for the keypoint locations
 	printf("  Computing correlation matrix for the keypoint locations\n");
 	int windowHalfLength = 10;
-	int windowSize = 2 * windowHalfLength + 1;
 
 	Mat corrMat = computeCorrelationMatrix(templateImg, sourceImg,
-			templateKeypoints, sourceKeypoints, windowHalfLength, windowSize,
+			templateKeypoints, sourceKeypoints, windowHalfLength,
 			similarityThreshold, proximityThreshold);
 
 	// Looking for maximum by rows
@@ -490,7 +491,7 @@ int main(int argc, char **argv) {
 //			}
 //		}
 
-		// 5) Compute a projective transformation
+// 5) Compute a projective transformation
 		Mat inliers_idx;
 		start = clock();
 		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
