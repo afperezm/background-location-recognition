@@ -257,7 +257,7 @@ template<class K, class V> vector<K> getMapKeys(map<K, V>& images) {
  *
  * @return Matrix of normalized correlation coefficients for template and source keypoints
  */
-Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
+Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 		vector<KeyPoint>& templateKeypoints, vector<KeyPoint>& sourcesKeypoints,
 		int& windowHalfLength, int& windowSize, double& thresholdNCC,
 		double& distanceThreshold) {
@@ -349,8 +349,8 @@ Mat computeCorrelationMatrix(Mat& templateImg, Mat& sourceImg,
  * @param matchedTemplatePoints Reference to the vector where the best matches for the template keypoints will be returned
  * @param matchedSourcePoints Reference to the vector where the best matches for the source keypoints will be returned
  */
-void matchKeypoints(Mat& templateImg, vector<KeyPoint>& templateKeypoints,
-		Mat& sourceImg, vector<KeyPoint>& sourceKeypoints,
+void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
+		const Mat& sourceImg, vector<KeyPoint>& sourceKeypoints,
 		vector<DMatch>& good_matches, vector<Point2f>& matchedTemplatePoints,
 		vector<Point2f>& matchedSourcePoints, double& proximityThreshold,
 		double& similarityThreshold) {
@@ -477,18 +477,18 @@ int main(int argc, char **argv) {
 				matchedSourcePoints, proximityThreshold, similarityThreshold);
 
 		// 4) Draw resulting putative matches
-		Mat img_matches;
-		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
-				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
-		imshow("Good Matches & Object detection", img_matches);
-
-		while (1) {
-			if (waitKey(1000) == 27) {
-				break;
-			}
-		}
+//		Mat img_matches;
+//		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+//				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+//				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+//		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
+//		imshow("Good Matches & Object detection", img_matches);
+//
+//		while (1) {
+//			if (waitKey(1000) == 27) {
+//				break;
+//			}
+//		}
 
 		// 5) Compute a projective transformation
 		Mat inliers_idx;
