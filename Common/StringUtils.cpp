@@ -1,5 +1,5 @@
+#include "FileUtils.h"
 #include "StringUtils.h"
-
 #include <string>
 #include <vector>
 #include <sstream>
@@ -31,4 +31,16 @@ string StringUtils::parseLandmarkName(vector<string>::const_iterator fileName) {
 		landmarkName = landmarkName + "_" + fileNameSplitted[var];
 	}
 	return landmarkName;
+}
+
+/**
+ * Transforms a key filename to an image filename
+ *
+ * @param keyFilename String holding the path to a keyfile since the data set root folder.
+ * @return Parsed image name
+ */
+string StringUtils::parseImgFilename(const string keyFilename) {
+	string imgFilename = StringUtils::split(keyFilename.c_str(), '/')[1];
+	imgFilename.resize(imgFilename.size() - 4);
+	return imgFilename + IMAGE_FILE_EXTENSION;
 }

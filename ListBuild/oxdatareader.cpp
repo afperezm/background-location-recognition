@@ -432,21 +432,33 @@ int main(int argc, char **argv) {
 
 		clock_t start, end;
 
-		// 1) Load template image and template keypoints file
-		string templateImgFilepath(argv[2]);
-		Mat templateImg = imread(argv[2], CV_LOAD_IMAGE_GRAYSCALE);
+		string imagesFolderpath(argv[2]);
+		string keysFolderpath(argv[3]);
 
-		string templateKeypointsFilepath(argv[3]);
+		string templateFilename(argv[4]);
+		string sourceFilename(argv[5]);
+
+		// 1) Load template image and template keypoints file
+		string templateImgFilepath(
+				imagesFolderpath
+						+ StringUtils::parseImgFilename(templateFilename));
+		Mat templateImg = imread(templateImgFilepath.c_str(),
+				CV_LOAD_IMAGE_GRAYSCALE);
+
+		string templateKeypointsFilepath(keysFolderpath + templateFilename);
 		vector<KeyPoint> templateKeypoints;
 		Mat templateDescriptors;
 		readKeypoints(templateKeypointsFilepath.c_str(), templateKeypoints,
 				templateDescriptors);
 
 		// 2) Load source image and source keypoints file
-		string sourceImgFilepath(argv[4]);
-		Mat sourceImg = imread(argv[4], CV_LOAD_IMAGE_GRAYSCALE);
+		string sourceImgFilepath(
+				imagesFolderpath
+						+ StringUtils::parseImgFilename(sourceFilename));
+		Mat sourceImg = imread(sourceImgFilepath.c_str(),
+				CV_LOAD_IMAGE_GRAYSCALE);
 
-		string sourceKeypointsFilepath(argv[5]);
+		string sourceKeypointsFilepath(keysFolderpath + sourceFilename);
 		vector<KeyPoint> sourceKeypoints;
 		Mat sourceDescriptors;
 		readKeypoints(sourceKeypointsFilepath.c_str(), sourceKeypoints,
