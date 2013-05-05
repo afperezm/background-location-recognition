@@ -517,7 +517,7 @@ int main(int argc, char **argv) {
 			}
 		}
 
-		Mat warp_dst = Mat::zeros(sourceImg.rows, sourceImg.cols,
+		Mat warp_dst = Mat::zeros(templateImg.rows, templateImg.cols,
 				sourceImg.type());
 		Mat Hp = getPerspectiveTransform(
 				sourceInliers(Range(0, 4), Range(0, 2)),
