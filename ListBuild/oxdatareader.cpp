@@ -516,7 +516,6 @@ int main(int argc, char **argv) {
 
 		Mat candidates_inliers, candidates_inliers_idx;
 
-		std::getline(candidatesFile, line);
 		while (std::getline(candidatesFile, line)) {
 			candidates_inliers = Mat::zeros(1, 50, DataType<int>::type);
 			candidates_inliers_idx = Mat::zeros(1, 50, DataType<int>::type);
