@@ -22,8 +22,6 @@ public:
 	static int readDescriptorFiles(const char* folderName,
 			const vector<string>& files,
 			map<string, vector<KeyPoint> >& images);
-	static vector<string> readFiles(const char* folderName,
-			const vector<string>& files);
 //	static void createListDbTxt(const char* folderName,
 //			vector<string>::const_iterator fileName, vector<string>* objects,
 //			bool appendLandmarkId);

@@ -108,20 +108,6 @@ int FileUtils::readDescriptorFiles(const char* folderName,
 	return EXIT_SUCCESS;
 }
 
-vector<string> FileUtils::readFiles(const char* folderName,
-		const vector<string>& files) {
-
-	vector<string> objects;
-
-	// Loop over collection of files
-	for (vector<string>::const_iterator file = files.begin();
-			file != files.end(); ++file) {
-		objects.push_back((*file));
-	}
-
-	return objects;
-}
-
 int FileUtils::readOriginalDescriptors(char* fileName) {
 	int totalDescriptors = 5; // 16334970
 	int descriptorSize = 128;

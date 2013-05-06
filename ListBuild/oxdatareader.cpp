@@ -267,8 +267,9 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 	Mat corrMat = Mat::zeros(templateKeypoints.size(), sourcesKeypoints.size(),
 			CV_32F);
 
-	Mat B;
+	Mat A, B;
 	Scalar meanB, stdDevB;
+	Scalar meanA, stdDevA;
 
 	// Loop over keypoints vector of template image
 	for (int i = 0; i < (int) templateKeypoints.size(); ++i) {
@@ -280,16 +281,21 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 			continue;
 		}
 
-		Mat A;
-		Scalar meanA, stdDevA;
+		// Extract patch from the template image
+		templateImg(
+				Range(pA.pt.y - windowHalfLength,
+						pA.pt.y + windowHalfLength + 1),
+				Range(pA.pt.x - windowHalfLength,
+						pA.pt.x + windowHalfLength + 1)).convertTo(A, CV_32F);
+		meanStdDev(A, meanA, stdDevA);
 
 		// Loop over keypoints vector of source image
 		for (int j = 0; j < (int) sourcesKeypoints.size(); ++j) {
 			KeyPoint pB = sourcesKeypoints[j];
 			// Ignore features close to the border since they don't have enough support
 			if (pB.pt.x - windowHalfLength < 0 || pB.pt.y - windowHalfLength < 0
-					|| pB.pt.x + windowHalfLength > sourceImg.cols
-					|| pB.pt.y + windowHalfLength > sourceImg.rows) {
+					|| pB.pt.x + windowHalfLength + 1 > sourceImg.cols
+					|| pB.pt.y + windowHalfLength + 1 > sourceImg.rows) {
 				continue;
 			}
 
@@ -299,17 +305,6 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 				continue;
 			}
 
-			// Extract patch from the template image (at the beginning of the cycle)
-			if (A.rows == 0 && A.cols == 0) {
-				templateImg(
-						Range(pA.pt.y - windowHalfLength,
-								pA.pt.y + windowHalfLength + 1),
-						Range(pA.pt.x - windowHalfLength,
-								pA.pt.x + windowHalfLength + 1)).convertTo(A,
-						CV_32F);
-				meanStdDev(A, meanA, stdDevA);
-			}
-
 			// Extract path from the source image
 			sourceImg(
 					Range(pB.pt.y - windowHalfLength,
@@ -317,14 +312,16 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 					Range(pB.pt.x - windowHalfLength,
 							pB.pt.x + windowHalfLength + 1)).convertTo(B,
 					CV_32F);
-
 			meanStdDev(B, meanB, stdDevB);
 
 			// Computing normalized cross correlation for the patches A and B
 			Mat NCC;
-			multiply(A - meanA, B - meanB, NCC);
+			subtract(A, meanA, A);
+			subtract(B, meanB, B);
+			multiply(A, B, NCC);
 			divide(NCC, stdDevA, NCC);
 			divide(NCC, stdDevB, NCC);
+
 			double ncc = sum(NCC)[0] / std::pow((double) windowSize, 2);
 
 			// Applying threshold to the just computed normalized cross correlation
@@ -377,8 +374,7 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	for (int i = 0; i < corrMat.rows; ++i) {
 		double minVal, maxVal;
 		Point minLoc, maxLoc;
-		minMaxLoc(corrMat(Range(i, i + 1), Range(0, corrMat.cols)), &minVal,
-				&maxVal, &minLoc, &maxLoc, Mat());
+		minMaxLoc(corrMat.row(i), &minVal, &maxVal, &minLoc, &maxLoc, Mat());
 		sourceKeypointsMatches.insert(
 				map<int, int>::value_type(i, (int) maxLoc.x));
 	}
@@ -391,8 +387,7 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	for (int i = 0; i < corrMat.cols; ++i) {
 		double minVal, maxVal;
 		Point minLoc, maxLoc;
-		minMaxLoc(corrMat(Range(0, corrMat.rows), Range(i, i + 1)), &minVal,
-				&maxVal, &minLoc, &maxLoc, Mat());
+		minMaxLoc(corrMat.col(i), &minVal, &maxVal, &minLoc, &maxLoc, Mat());
 		templateKeypointsMatches.insert(map<int, int>::value_type(i, maxLoc.y));
 	}
 
@@ -414,6 +409,84 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 			(int) good_matches.size(), (double) (end - start) / CLOCKS_PER_SEC);
 }
 
+int geometricVerification(string& templateImgFilepath,
+		string& templateKeypointsFilepath, string& sourceImgFilepath,
+		string& sourceKeypointsFilepath, double ransacReprojThreshold = 5,
+		double proximityThreshold = 300, double similarityThreshold = 0.8) {
+
+	// 1) Load template image and template keypoints file
+	Mat templateImg = imread(templateImgFilepath.c_str(),
+			CV_LOAD_IMAGE_GRAYSCALE);
+
+	vector<KeyPoint> templateKeypoints;
+	Mat templateDescriptors;
+	readKeypoints(templateKeypointsFilepath.c_str(), templateKeypoints,
+			templateDescriptors);
+
+	// 2) Load source image and source keypoints file
+	Mat sourceImg = imread(sourceImgFilepath.c_str(), CV_LOAD_IMAGE_GRAYSCALE);
+
+	vector<KeyPoint> sourceKeypoints;
+	Mat sourceDescriptors;
+	readKeypoints(sourceKeypointsFilepath.c_str(), sourceKeypoints,
+			sourceDescriptors);
+
+	// 3) Find putative matches
+	vector<DMatch> good_matches;
+	vector<Point2f> matchedSourcePoints;
+	vector<Point2f> matchedTemplatePoints;
+
+	matchKeypoints(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+			good_matches, matchedTemplatePoints, matchedSourcePoints,
+			proximityThreshold, similarityThreshold);
+
+	// 4) Draw resulting putative matches
+//	Mat img_matches;
+//	drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+//			good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+//			vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+//	namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
+//	imshow("Good Matches & Object detection", img_matches);
+
+//	while (1) {
+//		if (waitKey(1000) == 27) {
+//			break;
+//		}
+//	}
+
+// 5) Compute a projective transformation
+	Mat inliers_idx;
+	clock_t start = clock();
+	Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
+			CV_RANSAC, ransacReprojThreshold, inliers_idx);
+	clock_t end = clock();
+	printf("  Computed homography in [%0.3fs] and found [%d] inliers\n",
+			(double) (end - start) / CLOCKS_PER_SEC, (int) sum(inliers_idx)[0]);
+
+// 6) Drawing resulting inliers
+	vector<DMatch> inliers;
+	for (int i = 0; i < inliers_idx.rows; ++i) {
+		if ((int) inliers_idx.at<uchar>(i) == 1) {
+			inliers.push_back(good_matches.at(i));
+		}
+	}
+	Mat inlier_matches;
+	drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+			inliers, inlier_matches, Scalar::all(-1), Scalar::all(-1),
+			vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+	imwrite(sourceImgFilepath + "_match.jpg", inlier_matches);
+//	namedWindow("Inlier matches", CV_WINDOW_NORMAL);
+//	imshow("Inlier matches", inlier_matches);
+//
+//	while (1) {
+//		if (waitKey(1000) == 27) {
+//			break;
+//		}
+//	}
+
+	return (int) sum(inliers_idx)[0];
+}
+
 int main(int argc, char **argv) {
 
 	Mat A = Mat::ones(3, 3, CV_32F);
@@ -428,46 +501,77 @@ int main(int argc, char **argv) {
 //		return EXIT_FAILURE;
 //	}
 
-	if (string(argv[1]).compare("-gv") == 0) {
+	if (string(argv[1]).compare("-gvc") == 0) {
 
-		clock_t start, end;
+		string imagesFolderpath(argv[2]);
+		string keysFolderpath(argv[3]);
+
+		string line, templateFilename, sourceFilename;
+		std::ifstream candidatesFile(argv[4], std::fstream::in);
+		ofstream candidatesGvFile("candidates_gv.txt", std::fstream::out);
+
+		Mat candidates_inliers, candidates_inliers_idx;
+
+		std::getline(candidatesFile, line);
+		while (std::getline(candidatesFile, line)) {
+			candidates_inliers = Mat::zeros(1, 50, DataType<int>::type);
+			candidates_inliers_idx = Mat::zeros(1, 50, DataType<int>::type);
+
+			vector<string> splitted_line = StringUtils::split(line.c_str(),
+					' ');
+			templateFilename = splitted_line[0];
+			string templateImgFilepath(
+					imagesFolderpath
+							+ StringUtils::parseImgFilename(templateFilename));
+
+			for (int i = 1; i < (int) splitted_line.size(); ++i) {
+				sourceFilename = splitted_line[i];
+
+				string templateKeypointsFilepath(
+						keysFolderpath + templateFilename);
+
+				string sourceImgFilepath(
+						imagesFolderpath
+								+ StringUtils::parseImgFilename(
+										sourceFilename));
+
+				string sourceKeypointsFilepath(keysFolderpath + sourceFilename);
+
+				int num_inliers = geometricVerification(templateImgFilepath,
+						templateKeypointsFilepath, sourceImgFilepath,
+						sourceKeypointsFilepath);
+
+				candidates_inliers.at<int>(i - 1) = num_inliers;
+			}
+			sortIdx(candidates_inliers, candidates_inliers_idx,
+					CV_SORT_DESCENDING);
+			// Print number of inliers for each candidate
+			// candidatesGvFile << templateFilename << " " << candidates_inliers << endl;
+			// Print indexes of ordered Mat of candidates inliers
+			// candidatesGvFile << templateFilename << " " << candidates_inliers_idx << endl;
+			candidatesGvFile << templateFilename;
+			for (int j = 0; j < candidates_inliers_idx.cols; ++j) {
+				// Print index of ordered element at j position
+				// candidatesGvFile << " " << candidates_inliers.at<int>( candidates_inliers_idx.at<int>(j));
+				// Print ordered element at j+1 position since the first element of candidate's line is the query name
+				candidatesGvFile << " "
+						<< splitted_line[candidates_inliers_idx.at<int>(j) + 1];
+			}
+			candidatesGvFile << endl;
+		}
+		candidatesGvFile.close();
+		candidatesFile.close();
+
+		return EXIT_SUCCESS;
+	}
+
+	if (string(argv[1]).compare("-gv") == 0) {
 
 		string imagesFolderpath(argv[2]);
 		string keysFolderpath(argv[3]);
 
 		string templateFilename(argv[4]);
 		string sourceFilename(argv[5]);
-
-		// 1) Load template image and template keypoints file
-		string templateImgFilepath(
-				imagesFolderpath
-						+ StringUtils::parseImgFilename(templateFilename));
-		Mat templateImg = imread(templateImgFilepath.c_str(),
-				CV_LOAD_IMAGE_GRAYSCALE);
-
-		string templateKeypointsFilepath(keysFolderpath + templateFilename);
-		vector<KeyPoint> templateKeypoints;
-		Mat templateDescriptors;
-		readKeypoints(templateKeypointsFilepath.c_str(), templateKeypoints,
-				templateDescriptors);
-
-		// 2) Load source image and source keypoints file
-		string sourceImgFilepath(
-				imagesFolderpath
-						+ StringUtils::parseImgFilename(sourceFilename));
-		Mat sourceImg = imread(sourceImgFilepath.c_str(),
-				CV_LOAD_IMAGE_GRAYSCALE);
-
-		string sourceKeypointsFilepath(keysFolderpath + sourceFilename);
-		vector<KeyPoint> sourceKeypoints;
-		Mat sourceDescriptors;
-		readKeypoints(sourceKeypointsFilepath.c_str(), sourceKeypoints,
-				sourceDescriptors);
-
-		// 3) Find putative matches
-		vector<DMatch> good_matches;
-		vector<Point2f> matchedSourcePoints;
-		vector<Point2f> matchedTemplatePoints;
 
 		double ransacReprojThreshold;
 		double proximityThreshold, similarityThreshold;
@@ -486,58 +590,22 @@ int main(int argc, char **argv) {
 		} else {
 			similarityThreshold = 0.8;
 		}
-		matchKeypoints(templateImg, templateKeypoints, sourceImg,
-				sourceKeypoints, good_matches, matchedTemplatePoints,
-				matchedSourcePoints, proximityThreshold, similarityThreshold);
 
-		// 4) Draw resulting putative matches
-//		Mat img_matches;
-//		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
-//				good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-//				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-//		namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
-//		imshow("Good Matches & Object detection", img_matches);
-//
-//		while (1) {
-//			if (waitKey(1000) == 27) {
-//				break;
-//			}
-//		}
+		string templateImgFilepath(
+				imagesFolderpath
+						+ StringUtils::parseImgFilename(templateFilename));
 
-// 5) Compute a projective transformation
-		Mat inliers_idx;
-		start = clock();
-		Mat H = findHomography(matchedSourcePoints, matchedTemplatePoints,
-				CV_RANSAC, ransacReprojThreshold, inliers_idx);
-		end = clock();
-		printf("  Computed homography in [%0.3fs] and found [%d] inliers\n",
-				(double) (end - start) / CLOCKS_PER_SEC,
-				(int) sum(inliers_idx)[0]);
+		string templateKeypointsFilepath(keysFolderpath + templateFilename);
 
-		vector<DMatch> inliers;
-		Mat templateInliers((int) sum(inliers_idx)[0], 2,
-				DataType<float>::type);
-		Mat sourceInliers((int) sum(inliers_idx)[0], 2, DataType<float>::type);
+		string sourceImgFilepath(
+				imagesFolderpath
+						+ StringUtils::parseImgFilename(sourceFilename));
 
-		for (int i = 0; i < inliers_idx.rows; ++i) {
-			if ((int) inliers_idx.at<uchar>(i) == 1) {
-				inliers.push_back(good_matches.at(i));
-			}
-		}
+		string sourceKeypointsFilepath(keysFolderpath + sourceFilename);
 
-		// 6) Drawing resulting inliers
-		Mat inlier_matches;
-		drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
-				inliers, inlier_matches, Scalar::all(-1), Scalar::all(-1),
-				vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-		namedWindow("Inlier matches", CV_WINDOW_NORMAL);
-		imshow("Inlier matches", inlier_matches);
-
-		while (1) {
-			if (waitKey(1000) == 27) {
-				break;
-			}
-		}
+		geometricVerification(templateImgFilepath, templateKeypointsFilepath,
+				sourceImgFilepath, sourceKeypointsFilepath,
+				ransacReprojThreshold, proximityThreshold, similarityThreshold);
 
 		return EXIT_SUCCESS;
 	}
