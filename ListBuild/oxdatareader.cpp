@@ -396,10 +396,14 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	for (int i = 0; i < corrMat.rows; ++i) {
 		// sourceKeypointsMatches.at(i) is the best template keypoint match for the ith source keypoint
 		if (templateKeypointsMatches.at(sourceKeypointsMatches.at(i)) == i) {
-			good_matches.push_back(DMatch(i, sourceKeypointsMatches.at(i), 1));
-			matchedSourcePoints.push_back(sourceKeypoints[i].pt);
-			matchedTemplatePoints.push_back(
-					templateKeypoints[sourceKeypointsMatches.at(i)].pt);
+			Point2f sourcePoint = sourceKeypoints[i].pt;
+			Point2f templatePoint = templateKeypoints[sourceKeypointsMatches.at(
+					i)].pt;
+			good_matches.push_back(
+					DMatch(i, sourceKeypointsMatches.at(i),
+							norm(sourcePoint - templatePoint)));
+			matchedSourcePoints.push_back(sourcePoint);
+			matchedTemplatePoints.push_back(templatePoint);
 		}
 	}
 
