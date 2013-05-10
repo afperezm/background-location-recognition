@@ -19,6 +19,8 @@
 #include <fstream>
 #include <utility>
 
+#include <sys/stat.h>
+
 #include "../Common/StringUtils.h"
 #include "../Common/FileUtils.h"
 
@@ -478,7 +480,18 @@ int geometricVerification(string& templateImgFilepath,
 	drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
 			inliers, inlier_matches, Scalar::all(-1), Scalar::all(-1),
 			vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-	imwrite(sourceImgFilepath + "_match.jpg", inlier_matches);
+
+	string outputInliersFilepath = templateImgFilepath.substr(0,
+			templateImgFilepath.size() - 4) + "_matches_"
+			+ StringUtils::split(sourceImgFilepath, '/').back();
+	printf("  Writing inlier matches to [%s]\n", outputInliersFilepath.c_str());
+
+	imwrite(
+			(templateImgFilepath.substr(0, templateImgFilepath.size() - 4)
+					+ "_matches_"
+					+ StringUtils::split(sourceImgFilepath, '/').back()).c_str(),
+			inlier_matches);
+
 //	namedWindow("Inlier matches", CV_WINDOW_NORMAL);
 //	imshow("Inlier matches", inlier_matches);
 //
@@ -571,7 +584,9 @@ int main(int argc, char **argv) {
 	if (string(argv[1]).compare("-gv") == 0) {
 
 		string imagesFolderpath(argv[2]);
+		// TODO Check if imagesFolderpath exists
 		string keysFolderpath(argv[3]);
+		// TODO Check if keysFolderpath exists
 
 		string templateFilename(argv[4]);
 		string sourceFilename(argv[5]);
@@ -595,16 +610,21 @@ int main(int argc, char **argv) {
 		}
 
 		string templateImgFilepath(
-				imagesFolderpath
+				imagesFolderpath + "/"
 						+ StringUtils::parseImgFilename(templateFilename));
+		// TODO Check that templateImgFilepath is a valid image filepath starting from the images folder as root
 
-		string templateKeypointsFilepath(keysFolderpath + templateFilename);
+		string templateKeypointsFilepath(
+				keysFolderpath + "/" + templateFilename);
+		// TODO Check that templateFilename is a valid template keypoints filepath starting from the keypoints folder as root
 
 		string sourceImgFilepath(
-				imagesFolderpath
+				imagesFolderpath + "/"
 						+ StringUtils::parseImgFilename(sourceFilename));
+		// TODO Check that sourceImgFilepath is a valid image filepath starting from the images folder as root
 
-		string sourceKeypointsFilepath(keysFolderpath + sourceFilename);
+		string sourceKeypointsFilepath(keysFolderpath + "/" + sourceFilename);
+		// TODO Check that templateFilename is a valid template keypoints filepath starting from the keypoints folder as root
 
 		geometricVerification(templateImgFilepath, templateKeypointsFilepath,
 				sourceImgFilepath, sourceKeypointsFilepath,
