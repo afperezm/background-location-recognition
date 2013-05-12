@@ -469,18 +469,18 @@ int geometricVerification(string& templateImgFilepath,
 			proximityThreshold, similarityThreshold);
 
 	// 4) Draw resulting putative matches
-	Mat img_matches;
-	drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
-			good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-			vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-	namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
-	imshow("Good Matches & Object detection", img_matches);
-
-	while (1) {
-		if (waitKey(1000) == 27) {
-			break;
-		}
-	}
+//	Mat img_matches;
+//	drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+//			good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+//			vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+//	namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
+//	imshow("Good Matches & Object detection", img_matches);
+//
+//	while (1) {
+//		if (waitKey(1000) == 27) {
+//			break;
+//		}
+//	}
 
 // 5) Compute a projective transformation
 	Mat inliers_idx;
