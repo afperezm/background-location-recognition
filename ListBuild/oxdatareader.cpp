@@ -420,13 +420,9 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 		if (sourceKeypointsMatches.at(i) != -1
 				&& templateKeypointsMatches.at(sourceKeypointsMatches.at(i))
 						== i) {
-			printf("Found match template=[%d] source=[%d]\n",
-					sourceKeypointsMatches.at(i), i);
 			Point2f sourcePoint = sourceKeypoints[i].pt;
 			Point2f templatePoint = templateKeypoints[sourceKeypointsMatches.at(
 					i)].pt;
-			printf("sourcePoint=[%f,%f] templatePoint=[%f,%f]\n", sourcePoint.x,
-					sourcePoint.y, templatePoint.x, templatePoint.y);
 			good_matches.push_back(
 					DMatch(sourceKeypointsMatches.at(i), i,
 							norm(sourcePoint - templatePoint)));
