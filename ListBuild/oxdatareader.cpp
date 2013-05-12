@@ -287,7 +287,7 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 
 	int windowSize = 2 * windowHalfLength + 1;
 
-	Mat corrMat = Mat::zeros(templateKeypoints.size(), sourceKeypoints.size(),
+	Mat corrMat = -Mat::ones(templateKeypoints.size(), sourceKeypoints.size(),
 			CV_32F);
 
 	Mat A, B;
@@ -415,18 +415,20 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 
 	printf("  Looking for coincident matches\n");
 
-	for (int i = 0; i < corrMat.rows; ++i) {
+	for (int i = 0; i < corrMat.cols; ++i) {
 		// sourceKeypointsMatches.at(i) is the best template keypoint match for the ith source keypoint
-		if (templateKeypointsMatches.at(sourceKeypointsMatches.at(i)) == i) {
-			printf("Found match template=[%d] source=[%d]\n", i,
-					sourceKeypointsMatches.at(i));
+		if (sourceKeypointsMatches.at(i) != -1
+				&& templateKeypointsMatches.at(sourceKeypointsMatches.at(i))
+						== i) {
+			printf("Found match template=[%d] source=[%d]\n",
+					sourceKeypointsMatches.at(i), i);
 			Point2f sourcePoint = sourceKeypoints[i].pt;
 			Point2f templatePoint = templateKeypoints[sourceKeypointsMatches.at(
 					i)].pt;
 			printf("sourcePoint=[%f,%f] templatePoint=[%f,%f]\n", sourcePoint.x,
 					sourcePoint.y, templatePoint.x, templatePoint.y);
 			good_matches.push_back(
-					DMatch(i, sourceKeypointsMatches.at(i),
+					DMatch(sourceKeypointsMatches.at(i), i,
 							norm(sourcePoint - templatePoint)));
 			matchedSourcePoints.push_back(sourcePoint);
 			matchedTemplatePoints.push_back(templatePoint);
