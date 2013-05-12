@@ -281,13 +281,13 @@ template<class K, class V> vector<K> getMapKeys(map<K, V>& images) {
  * @return Matrix of normalized correlation coefficients for template and source keypoints
  */
 Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
-		vector<KeyPoint>& templateKeypoints, vector<KeyPoint>& sourcesKeypoints,
+		vector<KeyPoint>& templateKeypoints, vector<KeyPoint>& sourceKeypoints,
 		int& windowHalfLength, double& thresholdNCC,
 		double& distanceThreshold) {
 
 	int windowSize = 2 * windowHalfLength + 1;
 
-	Mat corrMat = Mat::zeros(templateKeypoints.size(), sourcesKeypoints.size(),
+	Mat corrMat = Mat::zeros(templateKeypoints.size(), sourceKeypoints.size(),
 			CV_32F);
 
 	Mat A, B;
@@ -313,8 +313,8 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 		meanStdDev(A, meanA, stdDevA);
 
 		// Loop over keypoints vector of source image
-		for (int j = 0; j < (int) sourcesKeypoints.size(); ++j) {
-			KeyPoint pB = sourcesKeypoints[j];
+		for (int j = 0; j < (int) sourceKeypoints.size(); ++j) {
+			KeyPoint pB = sourceKeypoints[j];
 			// Ignore features close to the border since they don't have enough support
 			if (pB.pt.x - windowHalfLength < 0 || pB.pt.y - windowHalfLength < 0
 					|| pB.pt.x + windowHalfLength + 1 > sourceImg.cols
