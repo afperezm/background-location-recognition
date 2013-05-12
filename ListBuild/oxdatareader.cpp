@@ -91,7 +91,10 @@ void readKeypoints(const char *filename, vector<KeyPoint>& keypoints,
 
 void createListDbTxt(const char* folderName,
 		const vector<string>& geometryFiles, string& keypointsFilename,
+		const vector<string>& queryKeypointFiles,
 		bool appendLandmarkId = false) {
+
+	vector<string> dbKeypointFiles;
 
 	ofstream keypointsFile;
 	keypointsFile.open(keypointsFilename.c_str(), ios::out | ios::trunc);
@@ -120,16 +123,28 @@ void createListDbTxt(const char* folderName,
 			string line;
 
 			while (std::getline(infile, line)) {
-				string imageName = "db/" + string(line.c_str())
-						+ string(KEYPOINT_FILE_EXTENSION);
-				if (appendLandmarkId == true) {
-					// Position of the landmarkName in the vector of landmarks
-					ostringstream temp;
-					temp << ((int) landmarks.size()) - 1;
-					imageName += " " + temp.str();
-				}
+				if (std::find(queryKeypointFiles.begin(),
+						queryKeypointFiles.end(), line)
+						== queryKeypointFiles.end()) {
 
-				keypointsFile << imageName << endl;
+					string imageName = "db/" + string(line.c_str())
+							+ string(KEYPOINT_FILE_EXTENSION);
+
+					if (appendLandmarkId == true) {
+						// Position of the landmarkName in the vector of landmarks
+						ostringstream temp;
+						temp << ((int) landmarks.size()) - 1;
+						imageName += " " + temp.str();
+					}
+
+					if (std::find(dbKeypointFiles.begin(),
+							dbKeypointFiles.end(), line)
+							== dbKeypointFiles.end()
+							|| appendLandmarkId == true) {
+						dbKeypointFiles.push_back(line);
+						keypointsFile << imageName << endl;
+					}
+				}
 			}
 
 			//Close file
@@ -140,14 +155,17 @@ void createListDbTxt(const char* folderName,
 	keypointsFile.close();
 }
 
-void createListQueriesTxt(const char* folderName,
+vector<string> createListQueriesTxt(const char* folderName,
 		const vector<string>& geometryFiles, string& keypointsFilename,
 		bool appendLandmarkId = false) {
+
+	vector<string> queryKeypointFiles;
 
 	ofstream keypointsFile;
 	keypointsFile.open(keypointsFilename.c_str(), ios::out | ios::trunc);
 
 	vector<string> landmarks;
+
 	for (vector<string>::const_iterator fileName = geometryFiles.begin();
 			fileName != geometryFiles.end(); ++fileName) {
 		if ((*fileName).find("query") != string::npos) {
@@ -180,6 +198,8 @@ void createListQueriesTxt(const char* folderName,
 				}
 
 				keypointsFile << qName << endl;
+
+				queryKeypointFiles.push_back(lineSplitted[0].substr(5));
 			}
 
 			//Close file
@@ -187,6 +207,7 @@ void createListQueriesTxt(const char* folderName,
 		}
 	}
 
+	return queryKeypointFiles;
 }
 
 void displayImage(string imageName, vector<KeyPoint> keypoints) {
@@ -447,18 +468,18 @@ int geometricVerification(string& templateImgFilepath,
 			proximityThreshold, similarityThreshold);
 
 	// 4) Draw resulting putative matches
-//	Mat img_matches;
-//	drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
-//			good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-//			vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
-//	namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
-//	imshow("Good Matches & Object detection", img_matches);
+	Mat img_matches;
+	drawMatches(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
+			good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
+			vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+	namedWindow("Good Matches & Object detection", CV_WINDOW_NORMAL);
+	imshow("Good Matches & Object detection", img_matches);
 
-//	while (1) {
-//		if (waitKey(1000) == 27) {
-//			break;
-//		}
-//	}
+	while (1) {
+		if (waitKey(1000) == 27) {
+			break;
+		}
+	}
 
 // 5) Compute a projective transformation
 	Mat inliers_idx;
@@ -506,9 +527,9 @@ int geometricVerification(string& templateImgFilepath,
 
 int main(int argc, char **argv) {
 
-	Mat A = Mat::ones(3, 3, CV_32F);
-	A.at<float>(0, 0) = 3;
-	A.at<float>(1, 1) = 2;
+	Mat corrMat = Mat::ones(3, 3, CV_32F);
+	corrMat.at<float>(0, 0) = 3;
+	corrMat.at<float>(1, 1) = 2;
 
 //	if (argc != 4) {
 //		printf(
@@ -641,18 +662,28 @@ int main(int argc, char **argv) {
 
 	ofstream outputFile;
 
-	if (string(argv[1]).compare("-db") == 0) {
-		string keypointsFilename = string(argv[3]) + "/list_db.txt";
-		createListDbTxt(argv[2], folderFiles, keypointsFilename);
-	} else if (string(argv[1]).compare("-dbld") == 0) {
-		string keypointsFilename = string(argv[3]) + "/list_db_ld.txt";
-		createListDbTxt(argv[2], folderFiles, keypointsFilename, true);
-	} else if (string(argv[1]).compare("-q") == 0) {
+	// TODO Do not include query files into the list of db files
+	// TODO Ensure that each image file db or query has at most one landmark id associated
+	if (string(argv[1]).compare("-lists") == 0) {
+
 		string keypointsFilename = string(argv[3]) + "/list_queries.txt";
-		createListQueriesTxt(argv[2], folderFiles, keypointsFilename);
+		vector<string> queryKeypointFiles = createListQueriesTxt(argv[2],
+				folderFiles, keypointsFilename);
+
+		keypointsFilename = string(argv[3]) + "/list_db.txt";
+		createListDbTxt(argv[2], folderFiles, keypointsFilename,
+				queryKeypointFiles);
+
 	} else if (string(argv[1]).compare("-gt") == 0) {
+
 		string keypointsFilename = string(argv[3]) + "/list_gt.txt";
-		createListQueriesTxt(argv[2], folderFiles, keypointsFilename, true);
+		vector<string> queryKeypointFiles = createListQueriesTxt(argv[2],
+				folderFiles, keypointsFilename, true);
+
+		keypointsFilename = string(argv[3]) + "/list_db_ld.txt";
+		createListDbTxt(argv[2], folderFiles, keypointsFilename,
+				queryKeypointFiles, true);
+
 	} else if (string(argv[1]).compare("-cf") == 0) {
 		vector<string>::iterator start_image;
 		if (argc == 3) {
