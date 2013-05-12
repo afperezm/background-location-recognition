@@ -392,26 +392,25 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	// Looking for maximum by rows
 	printf("  Looking for maximum by rows\n");
 
-	map<int, int> sourceKeypointsMatches;
+	map<int, int> templateKeypointsMatches;
 
 	for (int i = 0; i < corrMat.rows; ++i) {
 		double minVal, maxVal;
 		Point minLoc, maxLoc;
 		minMaxLoc(corrMat.row(i), &minVal, &maxVal, &minLoc, &maxLoc, Mat());
-		sourceKeypointsMatches.insert(
-				map<int, int>::value_type(i, (int) maxLoc.x));
+		templateKeypointsMatches.insert(map<int, int>::value_type(i, maxLoc.x));
 	}
 
 	// Looking for maximum by rows
 	printf("  Looking for maximum by columns\n");
 
-	map<int, int> templateKeypointsMatches;
+	map<int, int> sourceKeypointsMatches;
 
 	for (int i = 0; i < corrMat.cols; ++i) {
 		double minVal, maxVal;
 		Point minLoc, maxLoc;
 		minMaxLoc(corrMat.col(i), &minVal, &maxVal, &minLoc, &maxLoc, Mat());
-		templateKeypointsMatches.insert(map<int, int>::value_type(i, maxLoc.y));
+		sourceKeypointsMatches.insert(map<int, int>::value_type(i, maxLoc.y));
 	}
 
 	printf("  Looking for coincident matches\n");
