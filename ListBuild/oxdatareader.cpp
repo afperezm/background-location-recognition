@@ -323,8 +323,8 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 			}
 
 			// Ignore features which are far one another
-			if (abs(pA.pt.x - pB.pt.x) > distanceThreshold
-					|| abs(pA.pt.y - pB.pt.y) > distanceThreshold) {
+			if (norm(Point(pA.pt.x, pA.pt.y) - Point(pB.pt.x, pB.pt.y))
+					> distanceThreshold) {
 				continue;
 			}
 
@@ -419,9 +419,13 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	for (int i = 0; i < corrMat.rows; ++i) {
 		// sourceKeypointsMatches.at(i) is the best template keypoint match for the ith source keypoint
 		if (templateKeypointsMatches.at(sourceKeypointsMatches.at(i)) == i) {
+			printf("Found match template=[%d] source=[%d]\n", i,
+					sourceKeypointsMatches.at(i));
 			Point2f sourcePoint = sourceKeypoints[i].pt;
 			Point2f templatePoint = templateKeypoints[sourceKeypointsMatches.at(
 					i)].pt;
+			printf("sourcePoint=[%f,%f] templatePoint=[%f,%f]\n", sourcePoint.x,
+					sourcePoint.y, templatePoint.x, templatePoint.y);
 			good_matches.push_back(
 					DMatch(i, sourceKeypointsMatches.at(i),
 							norm(sourcePoint - templatePoint)));
@@ -662,8 +666,6 @@ int main(int argc, char **argv) {
 
 	ofstream outputFile;
 
-	// TODO Do not include query files into the list of db files
-	// TODO Ensure that each image file db or query has at most one landmark id associated
 	if (string(argv[1]).compare("-lists") == 0) {
 
 		string keypointsFilename = string(argv[3]) + "/list_queries.txt";
