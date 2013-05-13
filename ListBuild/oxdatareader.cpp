@@ -63,6 +63,7 @@ void readKeypoints(const char *filename, vector<KeyPoint>& keypoints,
 
 	int dim = 128;
 
+	keypoints.clear();
 	descriptors = Mat(num_keys, dim, DataType<float>::type);
 
 	for (int i = 0; i < num_keys; i++) {
@@ -210,9 +211,10 @@ vector<string> createListQueriesTxt(const char* folderName,
 	return queryKeypointFiles;
 }
 
-void displayImage(string imageName, vector<KeyPoint> keypoints) {
+void displayImage(string& imageName, vector<KeyPoint>& keypoints) {
 
-	printf("Displaying image [%s]", imageName.c_str());
+	printf("Displaying [%d] keypoints for image [%s]\n", (int) keypoints.size(),
+			imageName.c_str());
 
 	Mat img = imread(imageName, CV_LOAD_IMAGE_GRAYSCALE);
 
@@ -407,9 +409,8 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 	map<int, int> sourceKeypointsMatches;
 
 	for (int i = 0; i < corrMat.cols; ++i) {
-		double minVal, maxVal;
-		Point minLoc, maxLoc;
-		minMaxLoc(corrMat.col(i), &minVal, &maxVal, &minLoc, &maxLoc, Mat());
+		Point maxLoc;
+		minMaxLoc(corrMat.col(i), NULL, NULL, NULL, &maxLoc, Mat());
 		sourceKeypointsMatches.insert(map<int, int>::value_type(i, maxLoc.y));
 	}
 
@@ -439,8 +440,8 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 
 int geometricVerification(string& templateImgFilepath,
 		string& templateKeypointsFilepath, string& sourceImgFilepath,
-		string& sourceKeypointsFilepath, double ransacReprojThreshold = 5,
-		double proximityThreshold = 300, double similarityThreshold = 0.8) {
+		string& sourceKeypointsFilepath, double ransacReprojThreshold = 10.0,
+		double proximityThreshold = 100.0, double similarityThreshold = 0.8) {
 
 	// 1) Load template image and template keypoints file
 	Mat templateImg = imread(templateImgFilepath.c_str(),
@@ -467,6 +468,12 @@ int geometricVerification(string& templateImgFilepath,
 	matchKeypoints(templateImg, templateKeypoints, sourceImg, sourceKeypoints,
 			good_matches, matchedTemplatePoints, matchedSourcePoints,
 			proximityThreshold, similarityThreshold);
+
+	if (((int) good_matches.size()) < 4) {
+		fprintf(stderr,
+				"  Error while matching keypoints, at least 4 putative matches are needed for homography computation\n");
+		return -1;
+	}
 
 	// 4) Draw resulting putative matches
 //	Mat img_matches;
@@ -540,14 +547,97 @@ int main(int argc, char **argv) {
 //		return EXIT_FAILURE;
 //	}
 
+	if (string(argv[1]).compare("-perf") == 0) {
+
+		map<string, int> query_ld;
+		map<string, vector<int> > db_ld;
+		std::ifstream infile;
+		string line;
+		vector<string> lineSplitted;
+		int num_query_images = 55;
+		int num_candidates = 50;
+		Mat votes_mat = Mat::zeros(num_query_images, num_candidates, CV_8U);
+
+		// Reading file of ground truth landmark id of query images
+		// Line format: <query_image_name> <landmark_id>
+		infile.open(argv[2], std::fstream::in);
+		while (std::getline(infile, line)) {
+			lineSplitted = StringUtils::split(line, ' ');
+			string query_name = lineSplitted[0];
+			int landmark_id = atoi(lineSplitted[1].c_str());
+			// Save results on map of string keys to integer values
+			query_ld[query_name] = landmark_id;
+		}
+		infile.close();
+
+		// Reading file of ground truth landmark id of db images
+		// Line format: <db_image_name> <landmark_id>
+		infile.open(argv[3], std::fstream::in);
+		while (std::getline(infile, line)) {
+			lineSplitted = StringUtils::split(line, ' ');
+			string db_name = lineSplitted[0];
+			int landmark_id = atoi(lineSplitted[1].c_str());
+			// Save results on map of string keys to vector of integers
+			// since it might be associated with more than one landmark id
+			db_ld[db_name].push_back(landmark_id);
+		}
+		infile.close();
+
+		// Reading candidates file
+		infile.open(argv[4], std::fstream::in);
+		while (std::getline(infile, line)) {
+			lineSplitted = StringUtils::split(line, ' ');
+			string query_name = lineSplitted[0];
+			lineSplitted.erase(lineSplitted.begin());
+			// Loop over candidates
+			int k = 1;
+			Mat hist = Mat::zeros(1, (int) query_ld.size(), CV_8U);
+			for (string candidate : lineSplitted) {
+				// Loop over associated landmark ids for a candidate
+				for (int landmark_id : db_ld[candidate]) {
+					// Load histogram counts of landmark ids
+					hist.at<int>(landmark_id)++;}
+				Point max_landmark;
+				// Find landmark with max votes until kth candidate
+				minMaxLoc(hist, NULL, NULL, NULL, &max_landmark, Mat());
+				votes_mat.at<int>(query_ld[query_name], k) = max_landmark.x;
+				k++;
+			}
+		}
+		infile.close();
+
+	}
+
 	if (string(argv[1]).compare("-gvc") == 0) {
 
+		// TODO Check if imagesFolderpath exists
 		string imagesFolderpath(argv[2]);
+		// TODO Check if keysFolderpath exists
 		string keysFolderpath(argv[3]);
 
 		string line, templateFilename, sourceFilename;
 		std::ifstream candidatesFile(argv[4], std::fstream::in);
 		ofstream candidatesGvFile("candidates_gv.txt", std::fstream::out);
+		ofstream candidatesInliersFile("candidates_inliers.txt",
+				std::fstream::out);
+
+		double ransacReprojThreshold;
+		double proximityThreshold, similarityThreshold;
+		if (argc >= 7) {
+			ransacReprojThreshold = atof(argv[5]);
+		} else {
+			ransacReprojThreshold = 10.0;
+		}
+		if (argc >= 8) {
+			proximityThreshold = atof(argv[6]);
+		} else {
+			proximityThreshold = 100.0;
+		}
+		if (argc >= 9) {
+			similarityThreshold = atof(argv[7]);
+		} else {
+			similarityThreshold = 0.8;
+		}
 
 		Mat candidates_inliers, candidates_inliers_idx;
 
@@ -558,26 +648,32 @@ int main(int argc, char **argv) {
 			vector<string> splitted_line = StringUtils::split(line.c_str(),
 					' ');
 			templateFilename = splitted_line[0];
+			// TODO Check that templateImgFilepath is a valid image filepath starting from the images folder as root
 			string templateImgFilepath(
-					imagesFolderpath
+					imagesFolderpath + "/"
 							+ StringUtils::parseImgFilename(templateFilename));
 
 			for (int i = 1; i < (int) splitted_line.size(); ++i) {
 				sourceFilename = splitted_line[i];
 
+				// TODO Check that templateFilename is a valid template keypoints filepath starting from the keypoints folder as root
 				string templateKeypointsFilepath(
-						keysFolderpath + templateFilename);
+						keysFolderpath + "/" + templateFilename);
 
+				// TODO Check that sourceImgFilepath is a valid image filepath starting from the images folder as root
 				string sourceImgFilepath(
-						imagesFolderpath
+						imagesFolderpath + "/"
 								+ StringUtils::parseImgFilename(
 										sourceFilename));
 
-				string sourceKeypointsFilepath(keysFolderpath + sourceFilename);
+				// TODO Check that templateFilename is a valid template keypoints filepath starting from the keypoints folder as root
+				string sourceKeypointsFilepath(
+						keysFolderpath + "/" + sourceFilename);
 
 				int num_inliers = geometricVerification(templateImgFilepath,
 						templateKeypointsFilepath, sourceImgFilepath,
-						sourceKeypointsFilepath);
+						sourceKeypointsFilepath, ransacReprojThreshold,
+						proximityThreshold, similarityThreshold);
 
 				candidates_inliers.at<int>(i - 1) = num_inliers;
 			}
@@ -588,16 +684,22 @@ int main(int argc, char **argv) {
 			// Print indexes of ordered Mat of candidates inliers
 			// candidatesGvFile << templateFilename << " " << candidates_inliers_idx << endl;
 			candidatesGvFile << templateFilename;
+			candidatesInliersFile << templateFilename;
 			for (int j = 0; j < candidates_inliers_idx.cols; ++j) {
 				// Print index of ordered element at j position
 				// candidatesGvFile << " " << candidates_inliers.at<int>( candidates_inliers_idx.at<int>(j));
 				// Print ordered element at j+1 position since the first element of candidate's line is the query name
 				candidatesGvFile << " "
 						<< splitted_line[candidates_inliers_idx.at<int>(j) + 1];
+				candidatesInliersFile << " "
+						<< candidates_inliers.at<int>(
+								candidates_inliers_idx.at<int>(j));
 			}
 			candidatesGvFile << endl;
+			candidatesInliersFile << endl;
 		}
 		candidatesGvFile.close();
+		candidatesInliersFile.close();
 		candidatesFile.close();
 
 		return EXIT_SUCCESS;
@@ -623,7 +725,7 @@ int main(int argc, char **argv) {
 		if (argc >= 8) {
 			proximityThreshold = atof(argv[7]);
 		} else {
-			proximityThreshold = 500.0;
+			proximityThreshold = 100.0;
 		}
 		if (argc >= 9) {
 			similarityThreshold = atof(argv[8]);
@@ -648,11 +750,12 @@ int main(int argc, char **argv) {
 		string sourceKeypointsFilepath(keysFolderpath + "/" + sourceFilename);
 		// TODO Check that templateFilename is a valid template keypoints filepath starting from the keypoints folder as root
 
-		geometricVerification(templateImgFilepath, templateKeypointsFilepath,
-				sourceImgFilepath, sourceKeypointsFilepath,
-				ransacReprojThreshold, proximityThreshold, similarityThreshold);
+		int result = geometricVerification(templateImgFilepath,
+				templateKeypointsFilepath, sourceImgFilepath,
+				sourceKeypointsFilepath, ransacReprojThreshold,
+				proximityThreshold, similarityThreshold);
 
-		return EXIT_SUCCESS;
+		return result == -1 ? EXIT_FAILURE : EXIT_SUCCESS;
 	}
 
 	vector<string> folderFiles;
@@ -727,6 +830,26 @@ int main(int argc, char **argv) {
 					outputFile << endl;
 				}
 				outputFile.close();
+			}
+		}
+	} else if (string(argv[1]).compare("-visualkp") == 0) {
+
+		string imagesFolderPath(argv[3]);
+		string keypointsFolderPath(argv[2]);
+
+		Features features;
+		for (string filename : folderFiles) {
+			if (filename.find(".key") != string::npos) {
+
+				string keypointFilepath = keypointsFolderPath + "/" + filename;
+				readKeypoints(keypointFilepath.c_str(), features.keypoints,
+						features.descriptors);
+
+				string imgPath = imagesFolderPath + "/"
+						+ StringUtils::parseImgFilename(filename);
+//				features = detectAndDescribeFeatures(imgPath);
+
+				displayImage(imgPath, features.keypoints);
 			}
 		}
 	}
