@@ -40,7 +40,7 @@ string StringUtils::parseLandmarkName(vector<string>::const_iterator fileName) {
  * @return Parsed image name
  */
 string StringUtils::parseImgFilename(const string keyFilename) {
-	string imgFilename = StringUtils::split(keyFilename.c_str(), '/')[1];
+	string imgFilename = StringUtils::split(keyFilename.c_str(), '/').back();
 	imgFilename.resize(imgFilename.size() - 4);
 	return imgFilename + IMAGE_FILE_EXTENSION;
 }
