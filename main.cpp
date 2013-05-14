@@ -23,6 +23,7 @@
 
 #include "../Common/StringUtils.h"
 #include "../Common/FileUtils.h"
+#include "../DataLib/reader.h"
 
 #include <VocabLib/keys2.h>
 
@@ -44,51 +45,6 @@ struct Features {
 	vector<KeyPoint> keypoints;
 	Mat descriptors;
 };
-
-/**
- *
- * @param filename Path to the a features file.
- * @param keypoints Keypoints stored in the specified input file.
- * @param feature_descriptors Descriptors stored in the specified input file. Row i is the descriptor for keypoint i.
- */
-void readKeypoints(const char *filename, vector<KeyPoint>& keypoints,
-		Mat& descriptors) {
-
-	printf("Reading keypoints from file [%s]\n", filename);
-
-	int num_keys = 0;
-	short int *keys;
-	keypt_t* info = NULL;
-	num_keys = ReadKeyFile(filename, &keys, &info);
-
-	int dim = 128;
-
-	keypoints.clear();
-	descriptors = Mat(num_keys, dim, DataType<float>::type);
-
-	for (int i = 0; i < num_keys; i++) {
-		KeyPoint key_point = KeyPoint();
-		key_point.pt.x = info[i].x;
-		key_point.pt.y = info[i].y;
-		key_point.size = info[i].scale;
-		key_point.angle = info[i].orient;
-
-		keypoints.push_back(key_point);
-
-		for (int j = i * dim; j < (i + 1) * dim; j++) {
-			descriptors.at<float>(i, j - i * dim) = (float) keys[j];
-		}
-
-	}
-
-	delete[] keys;
-	if (info != NULL) {
-		delete[] info;
-	}
-
-	printf("  Read [%d] keypoints\n", (int) keypoints.size());
-
-}
 
 void createListDbTxt(const char* folderName,
 		const vector<string>& geometryFiles, string& keypointsFilename,

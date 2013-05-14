@@ -16,21 +16,12 @@ using std::vector;
 using std::map;
 using cv::KeyPoint;
 
-class FileUtils {
-public:
-	static int readFolder(const char* folderName, vector<string>& files);
-	static int readDescriptorFiles(const char* folderName,
-			const vector<string>& files,
-			map<string, vector<KeyPoint> >& images);
-//	static void createListDbTxt(const char* folderName,
-//			vector<string>::const_iterator fileName, vector<string>* objects,
-//			bool appendLandmarkId);
-//	static void createListQueriesTxt(const char* folderName,
-//			vector<string>::const_iterator fileName, vector<string>* objects,
-//			bool appendLandmarkId);
-	static int readOriginalDescriptors(char* fileName);
-	static void getKeypointFilePath(string& keyfilesFolder, string& filepath);
-private:
-};
+namespace FileUtils {
+int readFolder(const char* folderName, vector<string>& files);
+int readDescriptorFiles(const char* folderName, const vector<string>& files,
+		map<string, vector<KeyPoint> >& images);
+int readOriginalDescriptors(char* fileName);
+void getKeypointFilePath(string& keyfilesFolder, string& filepath);
+} // namespace FileUtils
 
 #endif
