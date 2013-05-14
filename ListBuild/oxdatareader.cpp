@@ -547,16 +547,26 @@ int main(int argc, char **argv) {
 //		return EXIT_FAILURE;
 //	}
 
+	/**
+	 * For this purpose it reads and uses the query images ground truth
+	 * labels and the matrix of candidate db images for each query image.
+	 *
+	 * Additionally it computes the voting matrix. The idea behind ranking
+	 * several images at once is to get a more reliable landmark prediction
+	 * by implementing a voting scheme on this ranked list.
+	 */
 	if (string(argv[1]).compare("-perf") == 0) {
 
 		map<string, int> query_ld;
 		map<string, vector<int> > db_ld;
 		std::ifstream infile;
+		ofstream votes_file, candidates_occurence;
 		string line;
 		vector<string> lineSplitted;
 		int num_query_images = 55;
 		int num_candidates = 50;
-		Mat votes_mat = Mat::zeros(num_query_images, num_candidates, CV_8U);
+		int occurrence = 0;
+		Mat hist;
 
 		// Reading file of ground truth landmark id of query images
 		// Line format: <query_image_name> <landmark_id>
@@ -585,27 +595,49 @@ int main(int argc, char **argv) {
 
 		// Reading candidates file
 		infile.open(argv[4], std::fstream::in);
+		votes_file.open("voted_landmarks.txt", std::fstream::out);
+		candidates_occurence.open("candidates_occurence.txt",
+				std::fstream::out);
+		int line_number = 0;
 		while (std::getline(infile, line)) {
 			lineSplitted = StringUtils::split(line, ' ');
 			string query_name = lineSplitted[0];
 			lineSplitted.erase(lineSplitted.begin());
+//			candidates_occurence << query_name << " " << query_ld[query_name] << ": ";
+//			votes_file << query_name << " " << query_ld[query_name] << ": ";
 			// Loop over candidates
-			int k = 1;
-			Mat hist = Mat::zeros(1, (int) query_ld.size(), CV_8U);
+			int k = 0;
+			hist.zeros(1, 11, CV_8U);
+
 			for (string candidate : lineSplitted) {
+				// By default no occurrence exist
+				occurrence = 0;
 				// Loop over associated landmark ids for a candidate
 				for (int landmark_id : db_ld[candidate]) {
+					// Mark coincidence between candidate and query
+					if (query_ld[query_name] == landmark_id) {
+						occurrence = 1;
+					}
 					// Load histogram counts of landmark ids
 					hist.at<int>(landmark_id)++;}
 				Point max_landmark;
-				// Find landmark with max votes until kth candidate
+				// Find landmark with max votes among the set of k considered candidates
 				minMaxLoc(hist, NULL, NULL, NULL, &max_landmark, Mat());
-				votes_mat.at<int>(query_ld[query_name], k) = max_landmark.x;
+
+				// Store occurrence and max voted landmark
+				candidates_occurence << occurrence << " ";
+				votes_file << max_landmark.x << " ";
 				k++;
 			}
+			candidates_occurence << endl;
+			votes_file << endl;
+			line_number++;
 		}
+		votes_file.close();
+		candidates_occurence.close();
 		infile.close();
 
+		return EXIT_SUCCESS;
 	}
 
 	if (string(argv[1]).compare("-gvc") == 0) {
