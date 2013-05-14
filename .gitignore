@@ -13,6 +13,7 @@
 *.a
 
 Debug/*
+Default/*
 .cproject
 .project
 
