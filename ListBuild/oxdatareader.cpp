@@ -565,10 +565,12 @@ int main(int argc, char **argv) {
 		vector<string> lineSplitted;
 		int num_query_images = 55;
 		int num_candidates = 50;
+		int num_landmarks = 11;
 		int occurrence = 0;
 		Mat hist;
 
 		// Reading file of ground truth landmark id of query images
+		// Note: each query has at most one landmark id
 		// Line format: <query_image_name> <landmark_id>
 		infile.open(argv[2], std::fstream::in);
 		while (std::getline(infile, line)) {
@@ -581,6 +583,7 @@ int main(int argc, char **argv) {
 		infile.close();
 
 		// Reading file of ground truth landmark id of db images
+		// Note: each db might have more than one landmark id
 		// Line format: <db_image_name> <landmark_id>
 		infile.open(argv[3], std::fstream::in);
 		while (std::getline(infile, line)) {
@@ -603,11 +606,12 @@ int main(int argc, char **argv) {
 			lineSplitted = StringUtils::split(line, ' ');
 			string query_name = lineSplitted[0];
 			lineSplitted.erase(lineSplitted.begin());
+			// Add to the beginning of the line the query name and its landmark id
 //			candidates_occurence << query_name << " " << query_ld[query_name] << ": ";
 //			votes_file << query_name << " " << query_ld[query_name] << ": ";
 			// Loop over candidates
 			int k = 0;
-			hist.zeros(1, 11, CV_8U);
+			hist.zeros(1, num_landmarks, CV_8U);
 
 			for (string candidate : lineSplitted) {
 				// By default no occurrence exist
