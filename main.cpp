@@ -21,9 +21,9 @@
 
 #include <sys/stat.h>
 
-#include "../Common/StringUtils.h"
-#include "../Common/FileUtils.h"
-#include "../DataLib/reader.h"
+#include "Common/StringUtils.h"
+#include "Common/FileUtils.h"
+#include "DataLib/reader.h"
 
 #include <VocabLib/keys2.h>
 
@@ -519,8 +519,8 @@ int main(int argc, char **argv) {
 		ofstream votes_file, candidates_occurence;
 		string line;
 		vector<string> lineSplitted;
-		int num_query_images = 55;
-		int num_candidates = 50;
+//		int num_query_images = 55;
+//		int num_candidates = 50;
 		int num_landmarks = 11;
 		int occurrence = 0;
 		Mat hist;
