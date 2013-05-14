@@ -12,9 +12,12 @@
 *.la
 *.a
 
+# Eclipse specific files
 Debug/*
 Default/*
 .cproject
 .project
 
 gmon.out
+# Manually edited files
+*~
