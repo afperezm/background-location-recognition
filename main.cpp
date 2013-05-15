@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
 		// Reading candidates file
 		infile.open(argv[4], std::fstream::in);
 		votes_file.open("voted_landmarks.txt", std::fstream::out);
-		candidates_occurence.open("candidates_occurence.txt",
+		candidates_occurence.open("candidates_occurrence.txt",
 				std::fstream::out);
 		int line_number = 0;
 		while (std::getline(infile, line)) {
