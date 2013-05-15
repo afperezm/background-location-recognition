@@ -24,7 +24,7 @@
 #include "Common/StringUtils.h"
 #include "Common/FileUtils.h"
 #include "DataLib/reader.h"
-#include "FeatureExtract/feature_extraction.h"
+#include "FeatureExtract/extractor.h"
 #include "GeomVerify/matcher.h"
 #include "ListBuild/lists_builder.h"
 
