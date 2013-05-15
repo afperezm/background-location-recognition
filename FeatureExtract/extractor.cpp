@@ -9,6 +9,8 @@
 
 #include <opencv2/features2d/features2d.hpp>
 
+#include <stdio.h>
+
 using cv::DescriptorExtractor;
 using cv::FeatureDetector;
 using cv::Ptr;
