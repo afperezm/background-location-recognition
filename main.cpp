@@ -386,8 +386,9 @@ int main(int argc, char **argv) {
 		}
 	} else if (string(argv[1]).compare("-visualkp") == 0) {
 
-		string imagesFolderPath(argv[3]);
 		string keypointsFolderPath(argv[2]);
+		string imagesFolderPath(argv[3]);
+		string outputImagesFolderPath(argv[4]);
 
 		Features features;
 		for (string filename : folderFiles) {
@@ -399,9 +400,17 @@ int main(int argc, char **argv) {
 
 				string imgPath = imagesFolderPath + "/"
 						+ StringUtils::parseImgFilename(filename);
-//				features = detectAndDescribeFeatures(imgPath);
 
-				displayImage(imgPath, features.keypoints);
+				printf("Reading image [%s]\n", imgPath.c_str());
+				Mat img = imread(imgPath, CV_LOAD_IMAGE_GRAYSCALE);
+
+				drawKeypoints(img, features.keypoints, img, cvScalar(255, 0, 0),
+						DrawMatchesFlags::DEFAULT);
+				string imgWithKeysPath = outputImagesFolderPath + "/"
+						+ StringUtils::parseImgFilename(filename, "_with_keys");
+				printf("Writing image [%s]\n", imgWithKeysPath.c_str());
+				cv::imwrite(imgWithKeysPath, img);
+
 			}
 		}
 	}

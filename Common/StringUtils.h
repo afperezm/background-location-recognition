@@ -11,7 +11,7 @@ namespace StringUtils {
 
 vector<string> split(const string &s, char delim);
 string parseLandmarkName(vector<string>::const_iterator fileName);
-string parseImgFilename(const string keyFilename);
+string parseImgFilename(const string keyFilename, string prefix="");
 vector<string> &split(const string &s, char delim, vector<string> &elems);
 
 } // namespace StringUtils

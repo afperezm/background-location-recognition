@@ -41,8 +41,8 @@ string StringUtils::parseLandmarkName(vector<string>::const_iterator fileName) {
  * @param keyFilename String holding the path to a keyfile since the data set root folder.
  * @return Parsed image name
  */
-string StringUtils::parseImgFilename(const string keyFilename) {
+string StringUtils::parseImgFilename(const string keyFilename, string prefix) {
 	string imgFilename = StringUtils::split(keyFilename.c_str(), '/').back();
 	imgFilename.resize(imgFilename.size() - 4);
-	return imgFilename + IMAGE_FILE_EXTENSION;
+	return imgFilename + (!prefix.empty() ? prefix : "") + IMAGE_FILE_EXTENSION;
 }
