@@ -32,7 +32,7 @@ function [recall_rates, precision_rates] = eval_performance(num_query_images, nu
 %	num_query_images = 55;
 %	num_candidates = 50;
 %	cand_occurr_fname = 'candidates_occurrence.txt';
-%	[recall_rates, precision_rates] = eval_performance(num_query_images, num_candidates, candidates_occurrence_fname);
+%	[recall_rates, precision_rates] = eval_performance(num_query_images, num_candidates, cand_occurr_fname);
 %
 
 % 1) Reading candidate occurrences file
