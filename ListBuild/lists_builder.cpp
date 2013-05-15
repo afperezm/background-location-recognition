@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <fstream>
 #include <iostream>
+#include "../Common/Constants.h"
 #include "../Common/StringUtils.h"
 #include "../Common/FileUtils.h"
 

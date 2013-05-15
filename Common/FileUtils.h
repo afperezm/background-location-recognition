@@ -8,9 +8,6 @@
 #include <map>
 #include <VocabLib/keys2.h>
 
-#define KEYPOINT_FILE_EXTENSION ".key"
-#define IMAGE_FILE_EXTENSION ".jpg"
-
 using std::string;
 using std::vector;
 using std::map;

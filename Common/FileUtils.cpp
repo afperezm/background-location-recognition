@@ -1,26 +1,29 @@
 #include "FileUtils.h"
+
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/legacy/legacy.hpp>
-#include <string>
-#include <vector>
-#include <cstdlib>
-#include <dirent.h>
-#include <stdio.h>
-#include <algorithm>
-#include <map>
-#include <fstream>
-#include "StringUtils.h"
 #include <VocabLib/keys2.h>
 
+#include <algorithm>
+#include <cstdlib>
+#include <dirent.h>
+#include <fstream>
+#include <map>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string>
 #include <utility>
+#include <vector>
+
+#include "Constants.h"
+#include "StringUtils.h"
+
+using cv::KeyPoint;
+using cv::Point2f;
 
 using std::string;
 using std::vector;
 using std::sort;
-
-using cv::KeyPoint;
-using cv::Point2f;
 
 int FileUtils::readFolder(const char* folderName, vector<string>& files) {
 
