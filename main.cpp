@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 //			votes_file << query_name << " " << query_ld[query_name] << ": ";
 			// Loop over candidates
 			int k = 0;
-			hist.zeros(1, num_landmarks, CV_8U);
+			hist = Mat::zeros(1, num_landmarks, DataType<int>::type);
 
 			for (string candidate : lineSplitted) {
 				// By default no occurrence exist

@@ -2,7 +2,7 @@
 images_folder=~/oxford_buildings_dataset/oxbuild_images/
 ground_truth_folder=~/oxford_buildings_dataset/gt_files_170407/
 
-export PATH=/home/andresf/workspace-opencv/VocabTree2/VocabLearn/:/home/andresf/workspace-opencv/VocabTree2/VocabBuildDB/:/home/andresf/workspace-opencv/VocabTree2/VocabMatch/:/home/andresf/workspace-opencv/oxdatareader/Default:/home/andresf/workspace-opencv/oxdatareader:$PATH
+export PATH=/home/andresf/workspace-opencv/VocabTree2/VocabLearn/:/home/andresf/workspace-opencv/VocabTree2/VocabBuildDB/:/home/andresf/workspace-opencv/VocabTree2/VocabMatch/:/home/andresf/workspace-opencv/oxford5k_recognition/Default/:$PATH
 
 # Compute database features, key file are written to the same directory where the image are located
 #oxdatareader -cf ~/Documents/POLIMI_maestria/Computer_Vision/Project/oxbuild_images/
