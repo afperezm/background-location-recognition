@@ -1,7 +1,7 @@
 function [recall_rates, precision_rates] = eval_performance(num_query_images, num_candidates, candidates_occurrence_fname)
 % [recall_rates, precision_rates] = eval_performance(num_query_images, num_candidates, candidates_occurrence_fname)
 %
-% This function computes and plots the average precision and recall over all
+% This function computes the average precision and recall rates over all
 % the query images while varying the numbers of candidates.
 %
 % The precision and recall measure in this case how good in average are the set
@@ -74,11 +74,6 @@ for k=1:num_candidates
 	recall_rates(k)=recall_rates(k)/num_query_images;
 	precision_rates(k)=precision_rates(k)/num_query_images;
 end
-
-% Plot avg precision and recall
-subplot(3,1,1), plot(1:num_candidates, recall_rates, 'r-o'), xlabel('Number of candidates'), ylabel('Recall');
-subplot(3,1,2), plot(1:num_candidates, precision_rates, 'r-o'), xlabel('Number of candidates'), ylabel('1-Precision');
-subplot(3,1,3), plot(precision_rates, recall_rates, 'r-o'), xlabel('1-Precision'), ylabel('Recall');
 
 end
 

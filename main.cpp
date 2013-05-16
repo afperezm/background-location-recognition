@@ -123,7 +123,6 @@ int main(int argc, char **argv) {
 		votes_file.open("voted_landmarks.txt", std::fstream::out);
 		candidates_occurence.open("candidates_occurrence.txt",
 				std::fstream::out);
-		int line_number = 0;
 		while (std::getline(infile, line)) {
 			lineSplitted = StringUtils::split(line, ' ');
 			string query_name = lineSplitted[0];
@@ -157,7 +156,6 @@ int main(int argc, char **argv) {
 			}
 			candidates_occurence << endl;
 			votes_file << endl;
-			line_number++;
 		}
 		votes_file.close();
 		candidates_occurence.close();
