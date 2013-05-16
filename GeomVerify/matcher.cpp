@@ -52,8 +52,8 @@ Mat computeCorrelationMatrix(const Mat& templateImg, const Mat& sourceImg,
 		KeyPoint pA = templateKeypoints[i];
 		// Ignore features close to the border since they don't have enough support
 		if (pA.pt.x - windowHalfLength < 0 || pA.pt.y - windowHalfLength < 0
-				|| pA.pt.x + windowHalfLength > templateImg.cols
-				|| pA.pt.y + windowHalfLength > templateImg.rows) {
+				|| pA.pt.x + windowHalfLength + 1 > templateImg.cols
+				|| pA.pt.y + windowHalfLength + 1 > templateImg.rows) {
 			continue;
 		}
 

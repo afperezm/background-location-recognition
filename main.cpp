@@ -73,6 +73,9 @@ int main(int argc, char **argv) {
 	 */
 	if (string(argv[1]).compare("-perf") == 0) {
 
+		printf(
+				"Computing matrices of voting and candidate occurrences for varying number of candidates\n");
+
 		map<string, int> query_ld;
 		map<string, vector<int> > db_ld;
 		std::ifstream infile;
@@ -86,6 +89,7 @@ int main(int argc, char **argv) {
 		Mat hist;
 
 		// Reading file of ground truth landmark id of query images
+		printf("  Reading file of ground truth landmark id of query images\n");
 		// Note: each query has at most one landmark id
 		// Line format: <query_image_name> <landmark_id>
 		infile.open(argv[2], std::fstream::in);
@@ -99,6 +103,7 @@ int main(int argc, char **argv) {
 		infile.close();
 
 		// Reading file of ground truth landmark id of db images
+		printf("  Reading file of ground truth landmark id of db images\n");
 		// Note: each db might have more than one landmark id
 		// Line format: <db_image_name> <landmark_id>
 		infile.open(argv[3], std::fstream::in);
@@ -113,6 +118,7 @@ int main(int argc, char **argv) {
 		infile.close();
 
 		// Reading candidates file
+		printf("  Reading candidates file\n");
 		infile.open(argv[4], std::fstream::in);
 		votes_file.open("voted_landmarks.txt", std::fstream::out);
 		candidates_occurence.open("candidates_occurrence.txt",
