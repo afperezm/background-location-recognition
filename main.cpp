@@ -268,17 +268,11 @@ int main(int argc, char **argv) {
 		string templateFilename(argv[4]);
 		string sourceFilename(argv[5]);
 
-		double ransacReprojThreshold;
-		double proximityThreshold, similarityThreshold;
+		double ransacReprojThreshold, similarityThreshold;
 		if (argc >= 7) {
 			ransacReprojThreshold = atof(argv[6]);
 		} else {
 			ransacReprojThreshold = 10.0;
-		}
-		if (argc >= 8) {
-			proximityThreshold = atof(argv[7]);
-		} else {
-			proximityThreshold = 100.0;
 		}
 		if (argc >= 9) {
 			similarityThreshold = atof(argv[8]);
