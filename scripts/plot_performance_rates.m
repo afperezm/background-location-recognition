@@ -1,5 +1,5 @@
-function plot_performance(recall_rates, precision_rates, line_format='r-o')
-% function plot_performance(recall_rates, precision_rates, line_format='r-o')
+function plot_performance_rates(recall_rates, precision_rates, line_format='r-o')
+% function plot_performance_rates(recall_rates, precision_rates, line_format='r-o')
 %
 % This function plots the average precision and recall rates computed previously
 % starting from the matrix of right landmark ids occurrences.

@@ -32,5 +32,13 @@ VocabLearn list_db.txt 10 6 1 tree_10_6.out
 VocabBuildDB list_db.txt tree_10_6.out tree_db_10_6.out
 VocabMatch tree_db_10_6.out list_db_ld.txt list_queries.txt 50 matches.txt output.html
 
-# Generate matrix of candidate occurrences and voting matrix for performance evaluation
+# Re-rank list of candidates using a geometric criterion
+oxford5k_recognition -gvc $images_folder ./ candidates.txt 3 300 0.5
+mv candidates_gv.txt candidates_gv_3_300_0.5.txt
+
+# Generate matrices of voting and candidate occurrences for performance evaluation both for pre and post geometric verification
+oxford5k_recognition -perf list_gt.txt list_db_ld.txt candidates_gv_3_100_0.5.txt
+mv candidates_occurrence.txt candidates_occurrence_gv.txt
+mv voted_landmarks.txt voted_landmarks_3_300_0.5.txt
+
 oxford5k_recognition -perf list_gt.txt list_db_ld.txt candidates.txt
