@@ -25,13 +25,13 @@ using std::string;
 using std::vector;
 using std::sort;
 
-int FileUtils::readFolder(const char* folderName, vector<string>& files) {
+int FileUtils::readFolder(const char* folderPath, vector<string>& files) {
 
 	DIR *dir;
 	struct dirent *ent;
 	// Try opening folder
-	if ((dir = opendir(folderName)) != NULL) {
-		fprintf(stdout, "Opening directory [%s]\n", folderName);
+	if ((dir = opendir(folderPath)) != NULL) {
+		fprintf(stdout, "Opening directory [%s]\n", folderPath);
 		// Save all true directory names into a vector of strings
 		while ((ent = readdir(dir)) != NULL) {
 			// Ignore . and .. as valid folder names
@@ -45,14 +45,9 @@ int FileUtils::readFolder(const char* folderName, vector<string>& files) {
 		sort(files.begin(), files.end());
 		fprintf(stdout, "  Found [%d] files\n", (int) files.size());
 	} else {
-		fprintf(stderr, "  Could not open directory [%s]", folderName);
+		fprintf(stderr, "  Could not open directory [%s]", folderPath);
 		return EXIT_FAILURE;
 	}
 
 	return EXIT_SUCCESS;
-}
-
-void FileUtils::getKeypointFilePath(string& keyfilesFolder, string& filepath) {
-	filepath.resize(filepath.size() - 4);
-	filepath += KEYPOINT_FILE_EXTENSION;
 }

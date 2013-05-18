@@ -46,18 +46,22 @@ void readKeypoints(const char *filename, vector<KeyPoint>& keypoints,
 vector<Point2f> readMask(const char*maskFilepath);
 
 /**
+ * Reads the descriptor files delivered together with the dataset following the format
+ * specified on the README file of it.
  *
- * @param folderName
- * @param files
- * @return
+ * @param folderPath Path to to folder where the descriptor file are located.
+ * @param files Reference to a vector containing the filenames of the files to be read
+ * @return a map where the read files are written together with its content
  */
-map<string, vector<KeyPoint> > readDescriptorFiles(const char* folderName,
+map<string, vector<KeyPoint> > readDescriptorFiles(const char* folderPath,
 		const vector<string>& files);
 
 /**
+ * Read descriptors starting from a binary file where all of them are stored.
+ * Currently it only traverses the file but doesn't returns nothing.
  *
- * @param fileName
- * @return
+ * @param fileName Path to the descriptors file
+ * @return Success if the file was succesfully opened.
  */
 int readOriginalDescriptors(char* fileName);
 

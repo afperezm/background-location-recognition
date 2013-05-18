@@ -52,7 +52,7 @@ void readKeypoints(const char *filename, vector<KeyPoint>& keypoints,
 
 }
 
-map<string, vector<KeyPoint> > readDescriptorFiles(const char* folderName,
+map<string, vector<KeyPoint> > readDescriptorFiles(const char* folderPath,
 		const vector<string>& files) {
 
 	map<string, vector<KeyPoint> > images;
@@ -69,7 +69,7 @@ map<string, vector<KeyPoint> > readDescriptorFiles(const char* folderName,
 		// Open geometry file
 		fprintf(stdout, "Reading geometry file [%s]\n", file.c_str());
 
-		ifstream infile((string(folderName) + "/" + file).c_str());
+		ifstream infile((string(folderPath) + "/" + file).c_str());
 
 		// Extract data from each descriptor
 		string line;

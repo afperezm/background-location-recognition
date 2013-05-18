@@ -14,11 +14,15 @@ using std::map;
 using cv::KeyPoint;
 
 namespace FileUtils {
-int readFolder(const char* folderName, vector<string>& files);
-int readDescriptorFiles(const char* folderName, const vector<string>& files,
-		map<string, vector<KeyPoint> >& images);
-int readOriginalDescriptors(char* fileName);
-void getKeypointFilePath(string& keyfilesFolder, string& filepath);
+/**
+ * Opens a directory and saves all the files names onto a vector of strings, it
+ * returns a status flag for reporting any error during the opening of the folder.
+ *
+ * @param folderName Path to the folder to be opened
+ * @param files Reference to a vector where all the files names will be saved
+ * @return Status flag, 0 for success and 1 for failure
+ */
+int readFolder(const char* folderfolderPath, vector<string>& files);
 } // namespace FileUtils
 
 #endif
