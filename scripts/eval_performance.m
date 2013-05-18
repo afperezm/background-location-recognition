@@ -9,6 +9,10 @@ plot_performance_rates(recall_rates, precision_rates, 'b-d')
 [recall_rates, precision_rates] = compute_performance_rates(55, 50, 'candidates_occurrence_3_100_0.5.txt');
 plot_performance_rates(recall_rates, precision_rates, 'g-d')
 
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'candidates_occurrence_featsel.txt');
+plot_performance_rates(recall_rates, precision_rates, 'k-d')
+
 subplot(3,1,1)
 
-legend({"Pre geometric verification", "Post geometric verification 10 auto 0.8", "Post geometric verification 3 100 0.5"}, "location", "northwest");
+legend({"Pre geometric verification", "Post geometric verification 10 auto 0.8", "Post geometric verification 3 100 0.5", "Masked without geometric verification"}, "location", "northwest");
+

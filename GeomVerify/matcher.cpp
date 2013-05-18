@@ -6,6 +6,7 @@
  */
 
 #include "matcher.h"
+#include <opencv2/legacy/legacy.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <map>
 #include "../DataLib/reader.h"

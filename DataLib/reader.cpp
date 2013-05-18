@@ -145,6 +145,8 @@ vector<Point2f> readMask(const char*maskFilepath) {
 	vector<Point2f> points;
 	string line;
 
+	printf("Reading mask file [%s]\n", maskFilepath);
+
 	ifstream infile(maskFilepath, std::fstream::in);
 
 	std::getline(infile, line);
@@ -158,6 +160,8 @@ vector<Point2f> readMask(const char*maskFilepath) {
 	}
 
 	infile.close();
+
+	printf("  Read [%d] pairs of coordinates\n", num_vertices);
 
 	return points;
 }

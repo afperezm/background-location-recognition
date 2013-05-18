@@ -399,7 +399,7 @@ int main(int argc, char **argv) {
 
 		vector<string> maskFiles;
 
-		Features features;
+		Features features, selectedFeatures;
 
 		for (string filename : folderFiles) {
 			if (filename.find(".key") != string::npos) {
@@ -413,7 +413,27 @@ int main(int argc, char **argv) {
 				string maskPath = masksFolderPath + "/" + filename
 						+ MASK_FILE_EXTENSION;
 
-//				vector<Point2f> polygon = readMask(maskPath);
+				vector<Point2f> polygon = readMask(maskPath.c_str());
+
+				printf("Selecting features\n");
+				int count = 0;
+				selectedFeatures.keypoints.clear();
+				for (KeyPoint p : features.keypoints) {
+					int inCont = pointPolygonTest(polygon, p.pt, false);
+					if (inCont != -1) {
+						selectedFeatures.keypoints.push_back(p);
+						selectedFeatures.descriptors.push_back(
+								features.descriptors.row(count));
+					}
+					count++;
+				}
+				printf("  Selected [%d] features\n",
+						(int) selectedFeatures.keypoints.size());
+
+				string outputFeaturesPath = outputFolderPath + "/" + filename
+						+ KEYPOINT_FILE_EXTENSION;
+
+				writeFeaturesToFile(outputFeaturesPath, selectedFeatures);
 			}
 		}
 	}
