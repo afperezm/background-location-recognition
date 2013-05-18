@@ -33,6 +33,6 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 int geometricVerification(string& templateImgFilepath,
 		string& templateKeypointsFilepath, string& sourceImgFilepath,
 		string& sourceKeypointsFilepath, double ransacReprojThreshold = 10.0,
-		double proximityThreshold = 100.0, double similarityThreshold = 0.8);
+		double similarityThreshold = 0.8);
 
 #endif /* MATCHER_H_ */

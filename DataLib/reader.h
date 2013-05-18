@@ -37,12 +37,22 @@ void readKeypoints(const char *filename, vector<KeyPoint>& keypoints,
 		Mat& descriptors);
 
 /**
+ * Reads a mask file with coordinates of the polygon defining the area of a building.
+ *
+ * @param maskFilepath Path to a file of polygon vertices coordinates. The first row is
+ * the number of coordinates it holds (n) and the other rows represent coordinate pairs.
+ * @return Vector of n Point2f elements each being a vertex of the polygon.
+ */
+vector<Point2f> readMask(const char*maskFilepath);
+
+/**
  *
  * @param folderName
  * @param files
  * @return
  */
-map<string, vector<KeyPoint> > readDescriptorFiles(const char* folderName, const vector<string>& files);
+map<string, vector<KeyPoint> > readDescriptorFiles(const char* folderName,
+		const vector<string>& files);
 
 /**
  *

@@ -21,6 +21,7 @@
 #include <utility>
 #include <vector>
 
+#include "Common/Constants.h"
 #include "Common/StringUtils.h"
 #include "Common/FileUtils.h"
 #include "DataLib/reader.h"
@@ -48,6 +49,8 @@ using std::string;
 using std::vector;
 
 void displayImage(string& imageName, vector<KeyPoint>& keypoints);
+
+void writeFeaturesToFile(string& outputFilepath, Features& keypoints);
 
 int main(int argc, char **argv) {
 
@@ -177,20 +180,14 @@ int main(int argc, char **argv) {
 		ofstream candidatesInliersFile("candidates_inliers.txt",
 				std::fstream::out);
 
-		double ransacReprojThreshold;
-		double proximityThreshold, similarityThreshold;
+		double ransacReprojThreshold, similarityThreshold;
 		if (argc >= 7) {
 			ransacReprojThreshold = atof(argv[5]);
 		} else {
 			ransacReprojThreshold = 10.0;
 		}
 		if (argc >= 8) {
-			proximityThreshold = atof(argv[6]);
-		} else {
-			proximityThreshold = 100.0;
-		}
-		if (argc >= 9) {
-			similarityThreshold = atof(argv[7]);
+			similarityThreshold = atof(argv[6]);
 		} else {
 			similarityThreshold = 0.8;
 		}
@@ -229,7 +226,7 @@ int main(int argc, char **argv) {
 				int num_inliers = geometricVerification(templateImgFilepath,
 						templateKeypointsFilepath, sourceImgFilepath,
 						sourceKeypointsFilepath, ransacReprojThreshold,
-						proximityThreshold, similarityThreshold);
+						similarityThreshold);
 
 				candidates_inliers.at<int>(i - 1) = num_inliers;
 			}
@@ -309,7 +306,7 @@ int main(int argc, char **argv) {
 		int result = geometricVerification(templateImgFilepath,
 				templateKeypointsFilepath, sourceImgFilepath,
 				sourceKeypointsFilepath, ransacReprojThreshold,
-				proximityThreshold, similarityThreshold);
+				similarityThreshold);
 
 		return result == -1 ? EXIT_FAILURE : EXIT_SUCCESS;
 	}
@@ -363,29 +360,7 @@ int main(int argc, char **argv) {
 				string descriptorFileName(argv[2]);
 				descriptorFileName += "/"
 						+ (*image).substr(0, (*image).size() - 4) + ".key";
-				printf("Writing feature descriptors to [%s]\n",
-						descriptorFileName.c_str());
-				outputFile.open(descriptorFileName.c_str(),
-						ios::out | ios::trunc);
-				outputFile << (int) features.keypoints.size() << " 128" << endl;
-				for (int i = 0; i < (int) features.keypoints.size(); ++i) {
-					outputFile << (float) features.keypoints[i].pt.y << " "
-							<< (float) features.keypoints[i].pt.x << " "
-							<< (float) features.keypoints[i].size << " "
-							<< (float) features.keypoints[i].angle << endl
-							<< " ";
-					for (int j = 0; j < features.descriptors.cols; ++j) {
-						outputFile
-								<< (int) round(
-										features.descriptors.at<float>(i, j))
-								<< " ";
-						if ((j + 1) % 20 == 0) {
-							outputFile << endl << " ";
-						}
-					}
-					outputFile << endl;
-				}
-				outputFile.close();
+				writeFeaturesToFile(descriptorFileName, features);
 			}
 		}
 	} else if (string(argv[1]).compare("-visualkp") == 0) {
@@ -415,6 +390,30 @@ int main(int argc, char **argv) {
 				printf("Writing image [%s]\n", imgWithKeysPath.c_str());
 				cv::imwrite(imgWithKeysPath, img);
 
+			}
+		}
+	} else if (string(argv[1]).compare("-featsel") == 0) {
+		string keypointsFolderPath(argv[2]);
+		string masksFolderPath(argv[3]);
+		string outputFolderPath(argv[4]);
+
+		vector<string> maskFiles;
+
+		Features features;
+
+		for (string filename : folderFiles) {
+			if (filename.find(".key") != string::npos) {
+				string keypointFilepath = keypointsFolderPath + "/" + filename;
+				readKeypoints(keypointFilepath.c_str(), features.keypoints,
+						features.descriptors);
+
+				StringUtils::split(filename.c_str(), '/').back();
+				filename.resize(filename.size() - 4);
+
+				string maskPath = masksFolderPath + "/" + filename
+						+ MASK_FILE_EXTENSION;
+
+//				vector<Point2f> polygon = readMask(maskPath);
 			}
 		}
 	}
@@ -460,4 +459,26 @@ void displayImage(string& imageName, vector<KeyPoint>& keypoints) {
 
 	waitKey(0);
 
+}
+
+void writeFeaturesToFile(string& outputFilepath, Features& features) {
+	ofstream outputFile;
+	printf("Writing feature descriptors to [%s]\n", outputFilepath.c_str());
+	outputFile.open(outputFilepath.c_str(), ios::out | ios::trunc);
+	outputFile << (int) features.keypoints.size() << " 128" << endl;
+	for (int i = 0; i < (int) features.keypoints.size(); ++i) {
+		outputFile << (float) features.keypoints[i].pt.y << " "
+				<< (float) features.keypoints[i].pt.x << " "
+				<< (float) features.keypoints[i].size << " "
+				<< (float) features.keypoints[i].angle << endl << " ";
+		for (int j = 0; j < features.descriptors.cols; ++j) {
+			outputFile << (int) round(features.descriptors.at<float>(i, j))
+					<< " ";
+			if ((j + 1) % 20 == 0) {
+				outputFile << endl << " ";
+			}
+		}
+		outputFile << endl;
+	}
+	outputFile.close();
 }

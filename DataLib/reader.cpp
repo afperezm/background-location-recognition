@@ -99,6 +99,7 @@ map<string, vector<KeyPoint> > readDescriptorFiles(const char* folderName,
 			}
 			count++;
 		}
+		infile.close();
 
 		printf("Read [%d] keypoints\n", (int) keypoints.size());
 
@@ -137,4 +138,26 @@ int readOriginalDescriptors(char* fileName) {
 	fclose(fin);
 
 	return EXIT_SUCCESS;
+}
+
+vector<Point2f> readMask(const char*maskFilepath) {
+
+	vector<Point2f> points;
+	string line;
+
+	ifstream infile(maskFilepath, std::fstream::in);
+
+	std::getline(infile, line);
+	int num_vertices = atoi(line.c_str());
+
+	while (std::getline(infile, line)) {
+		vector<string> lineSplitted = StringUtils::split(line, ' ');
+		points.push_back(
+				Point2f(atof(lineSplitted[0].c_str()),
+						atof(lineSplitted[1].c_str())));
+	}
+
+	infile.close();
+
+	return points;
 }

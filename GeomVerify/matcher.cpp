@@ -136,7 +136,9 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 
 	// Computing correlation matrix for the keypoint locations
 	printf("  Computing correlation matrix for the keypoint locations\n");
+	printf("  Proximity threshold of [%f]\n", proximityThreshold);
 	int windowHalfLength = 10;
+	printf("  Window half length [%d]\n", windowHalfLength);
 
 	Mat corrMat = computeCorrelationMatrix(templateImg, sourceImg,
 			templateKeypoints, sourceKeypoints, windowHalfLength,
@@ -192,7 +194,7 @@ void matchKeypoints(const Mat& templateImg, vector<KeyPoint>& templateKeypoints,
 int geometricVerification(string& templateImgFilepath,
 		string& templateKeypointsFilepath, string& sourceImgFilepath,
 		string& sourceKeypointsFilepath, double ransacReprojThreshold,
-		double proximityThreshold, double similarityThreshold) {
+		double similarityThreshold) {
 
 	// 1) Load template image and template keypoints file
 	Mat templateImg = imread(templateImgFilepath.c_str(),
@@ -210,6 +212,19 @@ int geometricVerification(string& templateImgFilepath,
 	Mat sourceDescriptors;
 	readKeypoints(sourceKeypointsFilepath.c_str(), sourceKeypoints,
 			sourceDescriptors);
+
+	// 2a)
+	double proximityThreshold = 50.0;
+	for (KeyPoint pA : templateKeypoints) {
+		for (KeyPoint pB : sourceKeypoints) {
+			double dist = norm(
+					Point(pA.pt.x, pA.pt.y) - Point(pB.pt.x, pB.pt.y));
+			proximityThreshold =
+					proximityThreshold >= 50.0 && dist < proximityThreshold ?
+							dist : proximityThreshold;
+		}
+	}
+	proximityThreshold *= 2;
 
 	// 3) Find putative matches
 	vector<DMatch> good_matches;

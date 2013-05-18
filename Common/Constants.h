@@ -10,5 +10,6 @@
 
 #define KEYPOINT_FILE_EXTENSION ".key"
 #define IMAGE_FILE_EXTENSION ".jpg"
+#define MASK_FILE_EXTENSION ".mask"
 
 #endif /* CONSTANTS_H_ */
