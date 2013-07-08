@@ -76,8 +76,10 @@ int main(int argc, char **argv) {
 	 */
 	if (string(argv[1]).compare("-perf") == 0) {
 
+		// Usage: $0 -perf <in.queries.ground.truth> <in.db.ground.truth> <in.geom.ranked.candidates> <out.occurr.mat> <out.voted.landmarks>
+
 		printf(
-				"Computing matrices of voting and candidate occurrences for varying number of candidates\n");
+				"Computing candidate occurrences and voting matrices for varying number of candidates\n");
 
 		map<string, int> query_ld;
 		map<string, vector<int> > db_ld;
@@ -121,11 +123,22 @@ int main(int argc, char **argv) {
 		infile.close();
 
 		// Reading candidates file
-		printf("  Reading candidates file\n");
+		printf("  Reading candidates file and computing occurrence and voting matrices\n");
 		infile.open(argv[4], std::fstream::in);
-		votes_file.open("voted_landmarks.txt", std::fstream::out);
-		candidates_occurence.open("candidates_occurrence.txt",
-				std::fstream::out);
+
+		if (argc >= 6) {
+			candidates_occurence.open(argv[6], std::fstream::out);
+		} else {
+			candidates_occurence.open("candidates_occurrence.txt",
+					std::fstream::out);
+		}
+
+		if (argc >= 7) {
+			votes_file.open(argv[5], std::fstream::out);
+		} else {
+			votes_file.open("voted_landmarks.txt", std::fstream::out);
+		}
+
 		while (std::getline(infile, line)) {
 			lineSplitted = StringUtils::split(line, ' ');
 			string query_name = lineSplitted[0];
@@ -169,32 +182,44 @@ int main(int argc, char **argv) {
 
 	if (string(argv[1]).compare("-gvc") == 0) {
 
-		// TODO Check if imagesFolderpath exists
-		string imagesFolderpath(argv[2]);
-		// TODO Check if keysFolderpath exists
-		string keysFolderpath(argv[3]);
+		// Usage: $0 -gvc <in.images.folder> <in.keys.root.folder> <in.ranked.candidates> <out.geom.ranked.candidates> <out.geom.ranked.candidates.inliers> <reprojection.threshold> <similarity.threshold>
 
-		string line, templateFilename, sourceFilename;
-		std::ifstream candidatesFile(argv[4], std::fstream::in);
-		ofstream candidatesGvFile("candidates_gv.txt", std::fstream::out);
-		ofstream candidatesInliersFile("candidates_inliers.txt",
-				std::fstream::out);
+		string images_folder_in(argv[2]);
+		string keys_root_folder_in(argv[3]);
+		string candidates_file_in(argv[4]);
+
+		std::ifstream f_candidates_in(candidates_file_in, std::fstream::in);
+		ofstream f_candidates_gv_out, f_candidates_inliers_out;
 
 		double ransacReprojThreshold, similarityThreshold;
+
+		if (argc >= 6) {
+			f_candidates_gv_out.open(argv[5], std::fstream::out);
+		} else {
+			f_candidates_gv_out.open("geom_ranked_candidates.txt",
+					std::fstream::out);
+		}
 		if (argc >= 7) {
-			ransacReprojThreshold = atof(argv[5]);
+			f_candidates_inliers_out.open(argv[6], std::fstream::out);
+		} else {
+			f_candidates_inliers_out.open("geom_ranked_candidates_inliers.txt",
+					std::fstream::out);
+		}
+		if (argc >= 8) {
+			ransacReprojThreshold = atof(argv[7]);
 		} else {
 			ransacReprojThreshold = 10.0;
 		}
-		if (argc >= 8) {
-			similarityThreshold = atof(argv[6]);
+		if (argc >= 9) {
+			similarityThreshold = atof(argv[8]);
 		} else {
 			similarityThreshold = 0.8;
 		}
 
+		string line, templateFilename, sourceFilename;
 		Mat candidates_inliers, candidates_inliers_idx;
 
-		while (std::getline(candidatesFile, line)) {
+		while (std::getline(f_candidates_in, line)) {
 			candidates_inliers = Mat::zeros(1, 50, DataType<int>::type);
 			candidates_inliers_idx = Mat::zeros(1, 50, DataType<int>::type);
 
@@ -203,7 +228,7 @@ int main(int argc, char **argv) {
 			templateFilename = splitted_line[0];
 			// TODO Check that templateImgFilepath is a valid image filepath starting from the images folder as root
 			string templateImgFilepath(
-					imagesFolderpath + "/"
+					images_folder_in + "/"
 							+ StringUtils::parseImgFilename(templateFilename));
 
 			for (int i = 1; i < (int) splitted_line.size(); ++i) {
@@ -211,17 +236,17 @@ int main(int argc, char **argv) {
 
 				// TODO Check that templateFilename is a valid template keypoints filepath starting from the keypoints folder as root
 				string templateKeypointsFilepath(
-						keysFolderpath + "/" + templateFilename);
+						keys_root_folder_in + "/" + templateFilename);
 
 				// TODO Check that sourceImgFilepath is a valid image filepath starting from the images folder as root
 				string sourceImgFilepath(
-						imagesFolderpath + "/"
+						images_folder_in + "/"
 								+ StringUtils::parseImgFilename(
 										sourceFilename));
 
 				// TODO Check that templateFilename is a valid template keypoints filepath starting from the keypoints folder as root
 				string sourceKeypointsFilepath(
-						keysFolderpath + "/" + sourceFilename);
+						keys_root_folder_in + "/" + sourceFilename);
 
 				int num_inliers = geometricVerification(templateImgFilepath,
 						templateKeypointsFilepath, sourceImgFilepath,
@@ -236,24 +261,24 @@ int main(int argc, char **argv) {
 			// candidatesGvFile << templateFilename << " " << candidates_inliers << endl;
 			// Print indexes of ordered Mat of candidates inliers
 			// candidatesGvFile << templateFilename << " " << candidates_inliers_idx << endl;
-			candidatesGvFile << templateFilename;
-			candidatesInliersFile << templateFilename;
+			f_candidates_gv_out << templateFilename;
+			f_candidates_inliers_out << templateFilename;
 			for (int j = 0; j < candidates_inliers_idx.cols; ++j) {
 				// Print index of ordered element at j position
 				// candidatesGvFile << " " << candidates_inliers.at<int>( candidates_inliers_idx.at<int>(j));
 				// Print ordered element at j+1 position since the first element of candidate's line is the query name
-				candidatesGvFile << " "
+				f_candidates_gv_out << " "
 						<< splitted_line[candidates_inliers_idx.at<int>(j) + 1];
-				candidatesInliersFile << " "
+				f_candidates_inliers_out << " "
 						<< candidates_inliers.at<int>(
 								candidates_inliers_idx.at<int>(j));
 			}
-			candidatesGvFile << endl;
-			candidatesInliersFile << endl;
+			f_candidates_gv_out << endl;
+			f_candidates_inliers_out << endl;
 		}
-		candidatesGvFile.close();
-		candidatesInliersFile.close();
-		candidatesFile.close();
+		f_candidates_gv_out.close();
+		f_candidates_inliers_out.close();
+		f_candidates_in.close();
 
 		return EXIT_SUCCESS;
 	}
@@ -335,13 +360,13 @@ int main(int argc, char **argv) {
 
 	} else if (string(argv[1]).compare("-cf") == 0) {
 		vector<string>::iterator start_image;
-		if (argc == 3) {
+		if (argc == 4) {
 			// Set first image as start point of the loop over the folder of images
 			start_image = folderFiles.begin();
 		} else {
 			// Set received argument as start point of the loop over the folder of images
 			start_image = std::find(folderFiles.begin(), folderFiles.end(),
-					argv[3]);
+					argv[4]);
 		}
 
 		for (vector<string>::iterator image = start_image;
@@ -351,7 +376,7 @@ int main(int argc, char **argv) {
 				Features features = detectAndDescribeFeatures(
 						argv[2] + string("/") + (*image));
 
-				string descriptorFileName(argv[2]);
+				string descriptorFileName(argv[3]);
 				descriptorFileName += "/"
 						+ (*image).substr(0, (*image).size() - 4) + ".key";
 				writeFeaturesToFile(descriptorFileName, features);
@@ -375,7 +400,7 @@ int main(int argc, char **argv) {
 						+ StringUtils::parseImgFilename(filename);
 
 				printf("Reading image [%s]\n", imgPath.c_str());
-				Mat img = imread(imgPath, CV_LOAD_IMAGE_GRAYSCALE);
+				Mat img = imread(imgPath, CV_LOAD_IMAGE_COLOR);
 
 				drawKeypoints(img, features.keypoints, img, cvScalar(255, 0, 0),
 						DrawMatchesFlags::DEFAULT);
