@@ -21,3 +21,7 @@ Default/*
 gmon.out
 # Manually edited files
 *~
+
+FeatureExtractSelect/FeatureExtractSelect
+GeomVerify/GeomVerify
+PerfEval/PerfEval
