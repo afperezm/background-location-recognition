@@ -18,6 +18,9 @@
 %
 
 function masker(images_dir_name)
+
+	disp(sprintf('\nComputing masks for JPEG images located in [%s]\n', images_dir_name));
+
 	% Read folder
     images_dir = dir([images_dir_name '/*.jpg']);
     num_query_images = length(images_dir);
