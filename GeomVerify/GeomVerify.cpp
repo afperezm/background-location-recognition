@@ -19,11 +19,11 @@ using std::endl;
 
 int main(int argc, char **argv) {
 
-	if (argc != 8 && argc != 9) {
+	if (argc != 7 && argc != 8 && argc != 9) {
 		printf(
 				"\nUsage:\n"
 						"\t%s -gvc <in.imgs.folder> <in.keys.root.folder> <in.ranked.candidates> <out.geom.ranked.candidates> <out.geom.ranked.candidates.inliers> <in.reprojection.threshold> <in.similarity.threshold>\n\n"
-						"\t%s -gv <in.imgs.folder> <in.keys.root.folder> <in.template.img> <in.src.img> <reprj.threshold> <sim.threshold>\n\n"
+						"\t%s -gv <in.imgs.folder> <in.keys.root.folder> <in.template.img> <in.src.img> {reprj.threshold} {sim.threshold}\n\n"
 						"Options:\n"
 						"\t-gvc:\t\n"
 						"\t-gv:\t\n\n", argv[0], argv[0]);
