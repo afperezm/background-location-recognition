@@ -1,7 +1,7 @@
 #!/bin/bash
-export IMAGES_FOLDER=~/oxford_buildings_dataset/oxbuild_images/
-export GROUND_TRUTH_FOLDER=~/oxford_buildings_dataset/gt_files_170407/
-export PATH=/home/andresf/workspace-opencv/VocabTree2/VocabLearn/:/home/andresf/workspace-opencv/VocabTree2/VocabBuildDB/:/home/andresf/workspace-opencv/VocabTree2/VocabMatch/:/home/andresf/workspace-opencv/oxford5k_recognition/Default/:$PATH
+export IMAGES_FOLDER=$HOME/oxford_buildings_dataset/oxbuild_images/
+export GROUND_TRUTH_FOLDER=$HOME/oxford_buildings_dataset/gt_files_170407/
+export PATH=$HOME/workspace-opencv/VocabTree2/VocabLearn/:$HOME/workspace-opencv/VocabTree2/VocabBuildDB/:$HOME/workspace-opencv/VocabTree2/VocabMatch/:$HOME/workspace-opencv/oxford5k_recognition/Default/:$PATH
 
 # Compute database features, key file are written to the same directory where the image are located
 oxford5k_recognition -cf $IMAGES_FOLDER ./
@@ -11,7 +11,7 @@ thumbnailer.sh $IMAGES_FOLDER ./
 
 # Move query key and jpeg thumb files from ground truth folder to the queries folder
 cat $GROUND_TRUTH_FOLDER/*query* | cut -d" " -f1 | cut -b6-256 | sort | uniq | xargs -I {} mv ./{}.key ./queries/
-cat ~/oxford_buildings_dataset/gt_files_170407/*query* | cut -d" " -f1 | cut -b6-256 | sort | uniq | xargs -I {} mv ./{}.thumb.jpg ./queries/
+cat $HOME/oxford_buildings_dataset/gt_files_170407/*query* | cut -d" " -f1 | cut -b6-256 | sort | uniq | xargs -I {} mv ./{}.thumb.jpg ./queries/
 
 # Move db key and jpeg thumb files from ground truth folder to the db folder
 mv ./*.key ./db/
@@ -50,7 +50,8 @@ oxford5k_recognition -perf list_gt.txt list_db_ld.txt ranked_candidates.txt occu
 oxford5k_recognition -perf list_gt.txt list_db_ld.txt geom_ranked_candidates.txt occurrence_matrix_postgv.txt voted_landmarks_postgv.txt
 
 # Variation of geometric verification parameters
-oxford5k_recognition -perf list_gt.txt list_db_ld.txt geom_ranked_candidates_3_100_0.5.txt occurrence_matrix_3_100_0.5.txt voted_landmarks_3_100_0.5.txt
+#oxford5k_recognition -perf list_gt.txt list_db_ld.txt geom_ranked_candidates_3_100_0.5.txt occurrence_matrix_3_100_0.5.txt voted_landmarks_3_100_0.5.txt
+oxford5k_recognition -gvc $IMAGES_FOLDER ./ ranked_candidates.txt geom_ranked_candidates_3_auto_0.5.txt geom_ranked_candidates_3_auto_0.5_inliers.txt 3 0.5
 
 # Generate matrices of voting and candidate occurrences for performance evaluation both for pre and post geometric verification
 oxford5k_recognition -perf list_gt_featsel.txt list_db_ld.txt ranked_candidates_featsel.txt occurrence_matrix_featsel.txt voted_landmarks_featsel.txt
