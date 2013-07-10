@@ -1,18 +1,48 @@
 % Evaluate performance of the recognition pipeline
 
-[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'candidates_occurrence_pregv.txt');
-plot_performance_rates(recall_rates, precision_rates, 'r-d')
+figure(1);
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_pregv.txt');
+plot_performance_rates(recall_rates, precision_rates, 'r');
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_postgv.txt');
+plot_performance_rates(recall_rates, precision_rates, 'g');
+subplot(3,1,1);
+legend({'Visual', 'Geometric auto'}, 'location', 'northwest');
 
-[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'candidates_occurrence_10_auto_0.8.txt');
-plot_performance_rates(recall_rates, precision_rates, 'b-d')
+h=figure(1);
+FN = findall(h,'-property','FontName');
+set(FN, 'FontName', 'Verdana');
 
-[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'candidates_occurrence_3_100_0.5.txt');
-plot_performance_rates(recall_rates, precision_rates, 'g-d')
+print -dpng pregv_vs_postgv.png
 
-[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'candidates_occurrence_featsel.txt');
-plot_performance_rates(recall_rates, precision_rates, 'k-d')
+figure(2);
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_pregv.txt');
+plot_performance_rates(recall_rates, precision_rates, 'r');
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_postgv.txt');
+plot_performance_rates(recall_rates, precision_rates, 'g')
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_3_100_0.5.txt');
+plot_performance_rates(recall_rates, precision_rates, 'b')
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_3_100_0.5.txt');
+plot_performance_rates(recall_rates, precision_rates, 'b')
+subplot(3,1,1);
+legend({'Visual', 'Geometric auto', 'Geometric fixed'}, 'location', 'northwest');
 
-subplot(3,1,1)
+h=figure(2);
+FN = findall(h,'-property','FontName');
+set(FN, 'FontName', 'Verdana');
 
-legend({"Pre geometric verification", "Post geometric verification 10 auto 0.8", "Post geometric verification 3 100 0.5", "Masked without geometric verification"}, "location", "northwest");
+print -dpng pregv_vs_postgv_auto_vs_postgv_fix.png
+
+figure(3);
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_pregv.txt');
+plot_performance_rates(recall_rates, precision_rates, 'r')
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_featsel.txt');
+plot_performance_rates(recall_rates, precision_rates, 'g')
+subplot(3,1,1);
+legend({'Visual', 'Masked'}, 'location', 'northwest');
+
+h=figure(3);
+FN = findall(h,'-property','FontName');
+set(FN, 'FontName', 'Verdana');
+
+print -dpng pregv_vs_pregv_masked.png
 
