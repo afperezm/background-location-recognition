@@ -18,10 +18,13 @@ Default/*
 .cproject
 .project
 
+# Performance stats
 gmon.out
+
 # Manually edited files
 *~
 
+# Executable files
 FeatureExtractSelect/FeatureExtractSelect
 GeomVerify/GeomVerify
 PerfEval/PerfEval
