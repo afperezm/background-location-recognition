@@ -93,19 +93,22 @@ int main(int argc, char **argv) {
 	infile.close();
 
 	// Reading candidates file
-	printf(
-			"  Reading candidates file and computing occurrence and voting matrices\n");
+	printf("  Reading candidates file\n");
 	infile.open(argv[3], std::fstream::in);
 
 	if (argc >= 6) {
+		printf("  Writing occurrence matrix to file [%s]\n", argv[4]);
 		candidates_occurence.open(argv[4], std::fstream::out);
 	} else {
+		printf("  Writing occurrence matrix to file [occurrence_matrix.txt]\n");
 		candidates_occurence.open("occurrence_matrix.txt", std::fstream::out);
 	}
 
 	if (argc >= 7) {
+		printf("  Writing occurrence matrix to file [%s]\n", argv[5]);
 		votes_file.open(argv[5], std::fstream::out);
 	} else {
+		printf("  Writing occurrence matrix to file [voted_landmarks.txt]\n");
 		votes_file.open("voted_landmarks.txt", std::fstream::out);
 	}
 
