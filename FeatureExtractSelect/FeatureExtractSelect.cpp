@@ -29,7 +29,7 @@ void writeFeaturesToFile(string& outputFilepath, Features& keypoints);
 
 int main(int argc, char **argv) {
 
-	if (argc < 8) {
+	if (argc != 4 && argc != 5) {
 		printf(
 				"\nUsage:\n"
 						"\t%s -cf <in.imgs.folder> <out.keys.folder> {in.startimg.id}\n\n"
