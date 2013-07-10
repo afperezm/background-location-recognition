@@ -5,12 +5,12 @@
  *      Author: andresf
  */
 
-#include "matcher.h"
+#include <map>
+#include "DataLib/reader.h"
+#include "GeomVerify/matcher.h"
+#include "Common/StringUtils.h"
 #include <opencv2/legacy/legacy.hpp>
 #include <opencv2/features2d/features2d.hpp>
-#include <map>
-#include "../DataLib/reader.h"
-#include "../Common/StringUtils.h"
 
 using cv::Scalar;
 using cv::Range;

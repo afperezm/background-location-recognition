@@ -5,13 +5,13 @@
  *      Author: andresf
  */
 
-#include "lists_builder.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
-#include "../Common/Constants.h"
-#include "../Common/StringUtils.h"
-#include "../Common/FileUtils.h"
+#include "Common/Constants.h"
+#include "Common/StringUtils.h"
+#include "Common/FileUtils.h"
+#include "ListBuild/lists_builder.h"
 
 using std::ofstream;
 using std::ostringstream;
