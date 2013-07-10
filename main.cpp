@@ -127,14 +127,14 @@ int main(int argc, char **argv) {
 		infile.open(argv[4], std::fstream::in);
 
 		if (argc >= 6) {
-			candidates_occurence.open(argv[6], std::fstream::out);
+			candidates_occurence.open(argv[5], std::fstream::out);
 		} else {
 			candidates_occurence.open("candidates_occurrence.txt",
 					std::fstream::out);
 		}
 
 		if (argc >= 7) {
-			votes_file.open(argv[5], std::fstream::out);
+			votes_file.open(argv[6], std::fstream::out);
 		} else {
 			votes_file.open("voted_landmarks.txt", std::fstream::out);
 		}
