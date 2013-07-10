@@ -2,7 +2,7 @@
 export IMAGES_FOLDER=$HOME/oxford_buildings_dataset/oxbuild_images/
 export GROUND_TRUTH_FOLDER=$HOME/oxford_buildings_dataset/gt_files_170407/
 export DATASET_ROOT=$HOME/workspace-opencv/oxford5k/
-export PATH=$HOME/workspace-opencv/VocabTree2/VocabLearn/:$HOME/workspace-opencv/VocabTree2/VocabBuildDB/:$HOME/workspace-opencv/VocabTree2/VocabMatch/:$HOME/workspace-opencv/oxford5k_recognition/FeatureExtractSelect/:$HOME/workspace-opencv/oxford5k_recognition/GeomVerify:$HOME/workspace-opencv/oxford5k_recognition/ListBuild/:$HOME/workspace-opencv/oxford5k_recognition/PerfEval/:$PATH
+export PATH=$HOME/workspace-opencv/VocabTree2/VocabLearn/:$HOME/workspace-opencv/VocabTree2/VocabBuildDB/:$HOME/workspace-opencv/VocabTree2/VocabMatch/:$HOME/workspace-opencv/LandmarkRecognition/FeatureExtractSelect/:$HOME/workspace-opencv/LandmarkRecognition/GeomVerify:$HOME/workspace-opencv/LandmarkRecognition/ListBuild/:$HOME/workspace-opencv/LandmarkRecognition/PerfEval/:$PATH
 
 # Compute database features, key file are written to the same directory where the image are located
 FeatureExtractSelect -cf $IMAGES_FOLDER $DATASET_ROOT
@@ -21,7 +21,7 @@ mv $DATASET_ROOT/*.key $DATASET_ROOT/db/
 mv $DATASET_ROOT/*.thumb.jpg $DATASET_ROOT/db/
 
 # Computing masks for query images
-octave --silent --eval "addpath('$DATASET_ROOT/../finding-long-straight-lines/');addpath('$DATASET_ROOT/../vanishing-points/');addpath('$DATASET_ROOT/../oxford5k_recognition/scripts');masker('$IMAGES_FOLDER')"
+octave --silent --eval "addpath('$DATASET_ROOT/../finding-long-straight-lines/');addpath('$DATASET_ROOT/../vanishing-points/');addpath('$DATASET_ROOT/../LandmarkRecognition/scripts');masker('$IMAGES_FOLDER')"
 mv $IMAGES_FOLDER/*.mask $DATASET_ROOT/queries_masks/
 
 # Filter key files using Matlab generated masks and copying to new queries folder
@@ -59,7 +59,7 @@ PerfEval -perf list_gt.txt list_db_ld.txt ranked_candidates.txt occurrence_matri
 PerfEval -perf list_gt.txt list_db_ld.txt geom_ranked_candidates.txt occurrence_matrix_postgv.txt voted_landmarks_postgv.txt
 
 # Variation of geometric verification parameters
-#oxford5k_recognition -perf list_gt.txt list_db_ld.txt geom_ranked_candidates_3_100_0.5.txt occurrence_matrix_3_100_0.5.txt voted_landmarks_3_100_0.5.txt
+#LandmarkRecognition -perf list_gt.txt list_db_ld.txt geom_ranked_candidates_3_100_0.5.txt occurrence_matrix_3_100_0.5.txt voted_landmarks_3_100_0.5.txt
 GeomVerify -gvc $IMAGES_FOLDER $DATASET_ROOT ranked_candidates.txt geom_ranked_candidates_3_auto_0.5.txt geom_ranked_candidates_3_auto_0.5_inliers.txt 3 0.5
 
 # Generate matrices of voting and candidate occurrences for performance evaluation both for pre and post geometric verification
