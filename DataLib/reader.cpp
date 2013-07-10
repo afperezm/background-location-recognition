@@ -7,8 +7,8 @@
 
 #include <fstream>
 
-#include "../Common/StringUtils.h"
-#include "reader.h"
+#include "Common/StringUtils.h"
+#include "DataLib/reader.h"
 
 using cv::DataType;
 using std::ifstream;

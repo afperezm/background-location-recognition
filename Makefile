@@ -14,7 +14,7 @@ default:
 	cd PerfEval; $(MAKE)
 
 clean:
-	cd ../VocabTree2/VocabLib; $(MAKE) clean
+#	cd ../VocabTree2/VocabLib; $(MAKE) clean
 	cd Common; $(MAKE) clean
 	cd DataLib; $(MAKE) clean
 	cd FeatureExtractSelect; $(MAKE) clean
