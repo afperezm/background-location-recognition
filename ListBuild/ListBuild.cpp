@@ -10,12 +10,6 @@
 
 int main(int argc, char **argv) {
 
-//"Usage: %s {output specification} <path_to_geometry_files_folder>"
-//"\nOUTPUT:\n  -db: create list of SIFT feature files of database images.\n  -dbld: create list of SIFT feature files of database images and corresponding landmark ID.\n  -q: create list of SIFT feature files of query images.\n  -gt: create list of SIFT feature files of query images and corresponding landmark ID.\n  -cf: compute image features.\n"
-
-//oxford5k_recognition -lists $GROUND_TRUTH_FOLDER ./
-//oxford5k_recognition -gt $GROUND_TRUTH_FOLDER ./
-
 	if (argc < 4) {
 		printf(
 				"\nUsage: %s [-lists|-gt] <in.ground.truth.folder> <out.lists.folder>\n\nOptions:\n"
