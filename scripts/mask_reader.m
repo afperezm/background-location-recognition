@@ -17,5 +17,5 @@ function mask_reader(img_filepath, mask_filepath)
     vertices = fscanf(fid, '%f %f\n', [2, num_vertices])';
     fclose(fid);
     im = im2double(imread(img_filepath));
-    figure, hold off, imshow(im), hold on, plot(vertices(:,1)', vertices(:,2)', 'r-', 'LineWidth', 2), hold off;
+	hold off, imshow(im), hold on, plot(vertices(:,1)', vertices(:,2)', 'r-', 'LineWidth', 2), hold off;
 end
