@@ -1,4 +1,4 @@
-#include "FileUtils.h"
+#include "Common/FileUtils.h"
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/legacy/legacy.hpp>
@@ -15,8 +15,8 @@
 #include <utility>
 #include <vector>
 
-#include "Constants.h"
-#include "StringUtils.h"
+#include "Common/Constants.h"
+#include "Common/StringUtils.h"
 
 using cv::KeyPoint;
 using cv::Point2f;

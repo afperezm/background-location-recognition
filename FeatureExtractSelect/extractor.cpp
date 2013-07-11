@@ -5,7 +5,7 @@
  *      Author: andresf
  */
 
-#include "extractor.h"
+#include "FeatureExtractSelect/extractor.h"
 
 #include <opencv2/features2d/features2d.hpp>
 

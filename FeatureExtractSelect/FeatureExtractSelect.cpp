@@ -36,9 +36,9 @@ int main(int argc, char **argv) {
 						"\t%s -featsel <in.query.keys.folder> <in.queries.mask.folder> <out.queries.maskedkeys.folder>\n\n"
 						"\t%s -visualkp <in.query.keys.folder> <in.query.imgs.folder> <out.query.withkeys.folder>\n\n"
 						"Options:\n"
-						"\t-cf:\t\n"
-						"\t-featseal:\t\n"
-						"\t-visualkp:\t\n\n", argv[0], argv[0], argv[0]);
+						"\t-cf: compute features\t\n"
+						"\t-featseal: apply mask to a set of keypoints file and write the result to a specific folder\t\n"
+						"\t-visualkp: visualize mask application result\t\n\n", argv[0], argv[0], argv[0]);
 		return EXIT_FAILURE;
 	}
 

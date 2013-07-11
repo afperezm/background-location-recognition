@@ -34,15 +34,7 @@ void displayImage(string& imageName, vector<KeyPoint>& keypoints);
 
 int main(int argc, char **argv) {
 
-//	if (argc != 4) {
-//		printf(
-//				"Usage: %s {output specification} <path_to_geometry_files_folder>"
-//						"\nOUTPUT:\n  -db: create list of SIFT feature files of database images.\n  -dbld: create list of SIFT feature files of database images and corresponding landmark ID.\n  -q: create list of SIFT feature files of query images.\n  -gt: create list of SIFT feature files of query images and corresponding landmark ID.\n  -cf: compute image features.\n",
-//				argv[0]);
-//		return EXIT_FAILURE;
-//	}
-
-	if (argc < 4) {
+	if (argc != 4 && argc != 5 && argc != 6) {
 		printf(
 				"\nUsage: %s <in.queries.ground.truth> <in.db.ground.truth> "
 						"<in.geom.ranked.candidates> [occurrence_matrix.txt] [voted_landmarks.txt]\n\n",

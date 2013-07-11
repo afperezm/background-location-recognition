@@ -17,14 +17,14 @@ print -dpng pregv_vs_postgv.png
 figure(2);
 [recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_pregv.txt');
 plot_performance_rates(recall_rates, precision_rates, 'r');
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_3_100_0.5.txt');
+plot_performance_rates(recall_rates, precision_rates, 'b')
+[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_3_auto_0.5.txt');
+plot_performance_rates(recall_rates, precision_rates, 'c')
 [recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_postgv.txt');
 plot_performance_rates(recall_rates, precision_rates, 'g')
-[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_3_100_0.5.txt');
-plot_performance_rates(recall_rates, precision_rates, 'b')
-[recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_3_100_0.5.txt');
-plot_performance_rates(recall_rates, precision_rates, 'b')
 subplot(3,1,1);
-legend({'Visual', 'Geometric auto', 'Geometric fixed'}, 'location', 'northwest');
+legend({'Visual', 'Geometric fixed', 'Geometric auto', 'Geometric loose'}, 'location', 'northwest');
 
 h=figure(2);
 FN = findall(h,'-property','FontName');

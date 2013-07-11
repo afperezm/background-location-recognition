@@ -10,7 +10,7 @@
 
 int main(int argc, char **argv) {
 
-	if (argc < 4) {
+	if (argc != 4) {
 		printf(
 				"\nUsage: %s [-lists|-gt] <in.ground.truth.folder> <out.lists.folder>\n\nOptions:\n"
 						"\t-lists:\tcreate list of SIFT feature files of query and database images.\n"
