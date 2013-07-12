@@ -6,7 +6,7 @@ plot_performance_rates(recall_rates, precision_rates, 'r');
 [recall_rates, precision_rates] = compute_performance_rates(55, 50, 'occurrence_matrix_postgv.txt');
 plot_performance_rates(recall_rates, precision_rates, 'g');
 subplot(3,1,1);
-legend({'Visual', 'Geometric auto'}, 'location', 'northwest');
+legend({'Visual', 'Geometric loose'}, 'location', 'northwest');
 
 h=figure(1);
 FN = findall(h,'-property','FontName');

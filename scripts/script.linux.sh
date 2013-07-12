@@ -1,4 +1,10 @@
 #!/bin/bash
+mkdir -p $HOME/oxford_buildings_dataset/gt_files_170407/; mkdir -p $HOME/oxford_buildings_dataset/oxbuild_images/; cd $HOME/oxford_buildings_dataset
+wget http://www.robots.ox.ac.uk/~vgg/data/oxbuildings/gt_files_170407.tgz
+wget http://www.robots.ox.ac.uk/~vgg/data/oxbuildings/oxbuild_images.tgz
+tar -xvf gt_files_170407.tgz -C $HOME/oxford_buildings_dataset/gt_files_170407/
+tar -xvf oxbuild_images.tgz -C $HOME/oxford_buildings_dataset/oxbuild_images/
+
 export IMAGES_FOLDER=$HOME/oxford_buildings_dataset/oxbuild_images/
 export GROUND_TRUTH_FOLDER=$HOME/oxford_buildings_dataset/gt_files_170407/
 export DATASET_ROOT=$HOME/workspace-opencv/oxford5k/
