@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -ne "2" ]; then
-	echo "Usage: $0 <images.folder> <output.thumbs.folder>"
+	echo -e "\nUsage:\n\t$0 <images.folder> <output.thumbs.folder>\n"
 	exit 1
 fi
 

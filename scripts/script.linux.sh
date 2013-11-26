@@ -7,7 +7,7 @@ tar -xvf oxbuild_images.tgz -C $HOME/oxford_buildings_dataset/oxbuild_images/
 
 export IMAGES_FOLDER=$HOME/oxford_buildings_dataset/oxbuild_images/
 export GROUND_TRUTH_FOLDER=$HOME/oxford_buildings_dataset/gt_files_170407/
-export DATASET_ROOT=$HOME/workspace-opencv/oxford5k/
+export DATASET_ROOT=$HOME/workspace-cpp/oxford5k/
 export PATH=$HOME/workspace-opencv/VocabTree2/VocabLearn/:$HOME/workspace-opencv/VocabTree2/VocabBuildDB/:$HOME/workspace-opencv/VocabTree2/VocabMatch/:$HOME/workspace-opencv/LocationRecognition/FeatureExtractSelect/:$HOME/workspace-opencv/LocationRecognition/GeomVerify:$HOME/workspace-opencv/LocationRecognition/ListBuild/:$HOME/workspace-opencv/LocationRecognition/PerfEval/:$PATH
 
 # Compute database features, key file are written to the same directory where the image are located
