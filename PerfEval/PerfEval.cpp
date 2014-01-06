@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 	ofstream votes_file, candidates_occurence;
 	string line;
 	vector<string> lineSplitted;
-	int num_landmarks = 11;
+	int num_landmarks = 0;
 	int occurrence = 0;
 	Mat hist;
 
@@ -81,6 +81,9 @@ int main(int argc, char **argv) {
 		// Save results on map of string keys to vector of integers
 		// since it might be associated with more than one landmark id
 		db_ld[db_name].push_back(landmark_id);
+		if (landmark_id + 1 > num_landmarks) {
+			num_landmarks = landmark_id + 1;
+		}
 	}
 	infile.close();
 
